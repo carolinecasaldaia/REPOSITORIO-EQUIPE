@@ -1699,10 +1699,8 @@ def data_do_lote(lote, ano_ref, mes_ref):
     return dias[min(lote, len(dias)) - 1]
 
 
-ASAAS_RELATORIOS = (PASTA.parent.parent.parent / "EMPRESA" / "CLAUDE" / "PREVISÃO RECEBIMENTOS ASAAS" /
-                    "RELATÓRIOS")
-CONTRATOS_CSV = PASTA.parent.parent / "A - COMERCIAL" / "DADOS CONTRATOS - CONSOLIDADO 2023-2026.csv"
-
+ ASAAS_RELATORIOS = PASTA / "_entrada" / "asaas"
+CONTRATOS_CSV = PASTA / "_entrada" / "DADOS CONTRATOS - CONSOLIDADO 2023-2026.csv"
 
 def _ultimo(padrao):
     arqs = sorted(ASAAS_RELATORIOS.glob(padrao)) if ASAAS_RELATORIOS.exists() else []
