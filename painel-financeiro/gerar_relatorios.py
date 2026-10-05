@@ -1699,7 +1699,7 @@ def data_do_lote(lote, ano_ref, mes_ref):
     return dias[min(lote, len(dias)) - 1]
 
 
- ASAAS_RELATORIOS = PASTA / "_entrada" / "asaas"
+ASAAS_RELATORIOS = PASTA / "_entrada" / "asaas"
 CONTRATOS_CSV = PASTA / "_entrada" / "DADOS CONTRATOS - CONSOLIDADO 2023-2026.csv"
 
 def _ultimo(padrao):
