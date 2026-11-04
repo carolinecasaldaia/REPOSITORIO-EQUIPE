@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+RELATÓRIOS/*.json
+RELATÓRIOS/*.html
+.pytest_cache/

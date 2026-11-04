@@ -1,0 +1,17 @@
+# Nenhum dado de cliente entra neste repositório.
+# Dados ficam em ~/CM-Calculos-Dados/ (fora do código).
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+*.pdf
+*.xlsx
+*.xls
+*.docx
+*.ods
+dados/
+casos/
+.env

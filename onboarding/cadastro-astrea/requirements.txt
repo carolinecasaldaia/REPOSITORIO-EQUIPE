@@ -1,0 +1,9 @@
+# Dependências da automação de cadastro no Astrea.
+# O atalho "Cadastrar Clientes.command" instala tudo sozinho na primeira vez,
+# num ambiente isolado em ~/.cadastro-astrea/venv.
+
+pypdf>=4.0            # leitura da camada de texto dos PDFs (contrato, conta de luz)
+playwright>=1.40      # navegação no Astrea (só é usada pelo adaptador "navegador")
+
+# Depois de instalar o playwright é preciso baixar o navegador uma vez:
+#     python3 -m playwright install chromium

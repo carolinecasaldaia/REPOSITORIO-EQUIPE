@@ -1,0 +1,489 @@
+<title>Painel Comercial Contratos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: livro-razão do comercial — seletor de período, números do período, evolução mês a mês, projeção de caixa, distribuições, leituras, tabela */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --ink:#1c2321; --muted:#5f6b67; --line:#dfe3e0;
+  --accent:#1f5c4d; --accent-2:#8fb8a9; --accent-soft:#e3eee9; --warn:#9a5b0b; --warn-soft:#f7ecd9; --neutral-soft:#eceeed;
+  --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",-apple-system,"Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
+  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
+  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,4vw,38px);margin:4px 0 6px;text-wrap:balance}
+h2.sec{font-family:var(--display);font-weight:500;font-size:20px;margin:0 0 12px}
+.sub{color:var(--muted);max-width:75ch;margin:0}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;align-items:start}
+.lateral{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px);display:flex;flex-direction:column;gap:10px}
+.lateral h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;font-weight:600}
+.periodo{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px}
+.periodo .ano{font-size:11px;letter-spacing:.1em;color:var(--muted);padding:10px 10px 4px;font-weight:600}
+.mesbtn{font:inherit;text-align:left;border:0;background:transparent;color:var(--ink);border-radius:7px;padding:8px 10px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:baseline}
+.mesbtn:hover{background:var(--neutral-soft)}
+.mesbtn b{font-weight:500;font-size:14px}
+.mesbtn .qt{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.mesbtn .vl{grid-column:1 / -1;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.mesbtn .st{grid-column:1 / -1;font-size:11px;color:var(--muted)}
+.mesbtn[aria-current="true"]{background:var(--accent);color:var(--surface)}
+.mesbtn[aria-current="true"] .qt,.mesbtn[aria-current="true"] .vl,.mesbtn[aria-current="true"] .st{color:var(--surface);opacity:.85}
+.mesbtn.todos{border-bottom:1px solid var(--line);border-radius:7px 7px 0 0;margin-bottom:2px}
+@media (max-width:820px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:18px}
+  .lateral{position:static}
+  .periodo{flex-direction:row;overflow-x:auto;padding:4px}
+  .periodo .ano{display:none}
+  .mesbtn{flex:0 0 auto;min-width:118px}
+  .mesbtn.todos{border-bottom:0;border-right:1px solid var(--line);border-radius:7px 0 0 7px;margin:0 2px 0 0}
+}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--surface);padding:15px 18px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi b{font-family:var(--mono);font-weight:500;font-size:21px;font-variant-numeric:tabular-nums}
+.kpi small{font-size:11.5px;color:var(--muted)}
+.kpi .d-up{color:var(--accent)} .kpi .d-down{color:var(--warn)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.grid.largo{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+@media (max-width:520px){.grid.largo{grid-template-columns:minmax(0,1fr)}}
+.periodo .ano{display:flex;justify-content:space-between;align-items:baseline;width:100%;font:inherit;font-size:11px;letter-spacing:.1em;color:var(--muted);padding:10px 10px 4px;font-weight:600;background:transparent;border:0;cursor:pointer;text-align:left;border-radius:7px}
+.periodo .ano:hover{color:var(--ink)}
+.periodo .ano[aria-current="true"]{color:var(--accent)}
+.periodo .ano small{font-family:var(--mono);font-weight:400;letter-spacing:0}
+.periodo .meses-ano[hidden]{display:none}
+.periodo .meses-ano{display:flex;flex-direction:column;gap:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.panel h3{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+svg text{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
+svg .lbl{fill:var(--ink)}
+.bar{display:grid;grid-template-columns:minmax(100px,1.2fr) 2.4fr auto;gap:10px;align-items:center;margin-bottom:7px;font-size:13px}
+.bar .tr{background:var(--neutral-soft);height:11px;border-radius:3px;overflow:hidden}
+.bar .fi{background:var(--accent);height:100%;display:block}
+.bar .n{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
+.leituras{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.leitura{border-left:3px solid var(--accent);background:var(--surface);padding:12px 14px;border-radius:0 8px 8px 0;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.leitura b{display:block;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+input:focus-visible,select:focus-visible,button:focus-visible,th:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#q{min-width:200px}
+.range{display:flex;gap:6px;align-items:center}.range input{width:105px}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:1180px;font-size:13px}
+th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;background:var(--surface)}
+th[aria-sort="ascending"]::after{content:" ↑"} th[aria-sort="descending"]::after{content:" ↓"}
+td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover td{background:var(--accent-soft)}
+tfoot td{font-weight:600;border-bottom:none}
+.nome{font-weight:500}.meta{color:var(--muted);font-size:12px}
+.pill{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ok{background:var(--accent-soft);color:var(--accent)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-n{background:var(--neutral-soft);color:var(--muted)}
+.estado{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
+.aviso{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13px;max-width:80ch}
+.foot{color:var(--muted);font-size:12.5px;display:flex;flex-direction:column;gap:8px;max-width:95ch}
+.fontes{display:flex;flex-wrap:wrap;gap:8px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Painel Comercial Contratos · Caroline Macedo Advocacia</div>
+    <h1>Contratos fechados, mês a mês</h1>
+    <p class="sub">Honorários, entradas, parcelamento e origem dos clientes desde fevereiro de 2023. De agosto de 2026 em diante, lidos direto dos contratos assinados e atualizados de hora em hora, das 8h40 às 20h40.</p>
+    <div class="meta" id="atualizado"></div>
+    <div class="aviso" id="aviso" role="status" hidden></div>
+  </header>
+
+  <div id="app" hidden>
+   <div class="layout">
+    <aside class="lateral">
+      <h2>Meses</h2>
+      <nav class="periodo" id="periodo" aria-label="Meses"></nav>
+    </aside>
+    <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
+      <div><div class="eyebrow" id="periodo-rotulo"></div></div>
+      <section class="kpis" id="kpis" aria-label="Resumo do período"></section>
+
+      <section>
+        <h2 class="sec">Evolução mensal</h2>
+        <div class="grid largo" id="evolucao"></div>
+      </section>
+
+      <section>
+        <h2 class="sec">Leituras para estratégia</h2>
+        <div class="leituras" id="leituras"></div>
+      </section>
+
+      <section>
+        <h2 class="sec">Parcelas a receber, mês a mês</h2>
+        <div class="panel"><div id="projecao"></div><div class="meta" id="projecao-nota"></div></div>
+      </section>
+
+      <section>
+        <h2 class="sec">Perfil dos contratos</h2>
+        <div class="grid">
+          <div class="panel"><h3>Por tipo de ação</h3><div id="d-acao"></div></div>
+          <div class="panel"><h3>Por Estado</h3><div id="d-uf"></div></div>
+          <div class="panel"><h3>Pagamento das parcelas</h3><div id="d-fp"></div></div>
+          <div class="panel"><h3>Bancos adversos</h3><div id="d-banco"></div></div>
+          <div class="panel"><h3>Prazo do parcelamento</h3><div id="d-prazo"></div></div>
+          <div class="panel"><h3>Faixa de honorários</h3><div id="d-faixa"></div></div>
+        </div>
+      </section>
+
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <h2 class="sec">Contratos</h2>
+        <div class="controls">
+          <div class="field"><label for="q">Buscar</label><input id="q" type="search" placeholder="Cliente, banco ou cidade"></div>
+          <div class="field"><label for="f-acao">Ação</label><select id="f-acao"><option value="">Todas</option></select></div>
+          <div class="field"><label for="f-uf">Estado</label><select id="f-uf"><option value="">Todos</option></select></div>
+          <div class="field"><label for="f-fp">Pagamento</label><select id="f-fp"><option value="">Todos</option><option>Boleto</option><option>Cartão</option><option>PIX</option></select></div>
+          <div class="field"><label>Honorários (R$)</label><div class="range"><input id="vmin" type="number" min="0" step="500" placeholder="mín."><span class="meta">a</span><input id="vmax" type="number" min="0" step="500" placeholder="máx."></div></div>
+        </div>
+        <div class="meta" id="count"></div>
+        <div class="tablebox">
+          <table>
+            <thead><tr>
+              <th data-k="mes" tabindex="0">Mês</th><th data-k="cliente" tabindex="0">Cliente</th><th data-k="acao" tabindex="0">Ação</th><th data-k="uf" tabindex="0">UF</th>
+              <th data-k="valor_total" tabindex="0" style="text-align:right">Honorários</th><th data-k="entrada" tabindex="0" style="text-align:right">Entrada</th>
+              <th data-k="entrada_paga_asaas" tabindex="0" style="text-align:right">Pago no Asaas</th>
+              <th data-k="parcelas_qtd" tabindex="0" style="text-align:right">Parcelas</th><th data-k="parcelas_valor" tabindex="0" style="text-align:right">Valor parcela</th>
+              <th data-k="ini" tabindex="0">1ª parcela</th><th data-k="forma_parcelas" tabindex="0">Pagamento</th>
+            </tr></thead>
+            <tbody id="tb"></tbody><tfoot id="tf"></tfoot>
+          </table>
+        </div>
+      </section>
+
+      <div class="foot">
+        <div><b>De onde vêm os números.</b> Honorários, entrada e parcelamento saem da Cláusula 2ª do Contrato HO Assinado de cada pasta marcada “OK” em Preparação para Ingresso. “Pago no Asaas” é o que teve baixa lá; entrada paga por Conta Azul ou por fora não aparece nessa coluna. Junho e julho de 2026 vêm das planilhas “DADOS CONTRATOS” já conferidas; fevereiro de 2023 a maio de 2026, da planilha “DADOS CONTRATOS - CONSOLIDADO 2023-2026”.</div>
+        <div><b>Entradas.</b> Até julho de 2026 vale o caixa de entradas registrado nas planilhas. Nos outros meses, a entrada é a do mês: parte de entrada dividida que caiu em outro mês sai, e parte de contrato antigo paga no mês entra, marcada “contrato de outro mês”. Esse contrato não conta em honorários nem na quantidade.</div>
+        <div class="fontes" id="fontes"></div>
+      </div>
+    </div>
+   </div>
+  </div>
+
+  <div class="estado" id="estado">Carregando os contratos…</div>
+</div>
+
+<script>
+const brl = v => v==null ? "—" : v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const brlK = v => v==null ? "—" : (Math.abs(v)>=1000 ? "R$ " + (v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1}) + " mil" : brl(v));
+const MES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const MESL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const rot = m => { const [a,n] = m.split("-"); return MES[+n-1] + "/" + a.slice(2); };
+const rotL = m => { const [a,n] = m.split("-"); return MESL[+n-1] + " de " + a; };
+const esc = s => String(s??"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const title = s => (s||"").toLowerCase().replace(/(^|[\s(])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Da|Do|Dos|Das|E|Em)\b/g,w=>w.toLowerCase());
+const ym = s => { const m = String(s||"").match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/); return m ? m[3] + "-" + m[2].padStart(2,"0") : null; };
+const addM = (k, n) => { let [a,m] = k.split("-").map(Number); m += n; while (m>12){m-=12;a++} while(m<1){m+=12;a--} return a + "-" + String(m).padStart(2,"0"); };
+const acaoNome = a => { const s=(a||"").toUpperCase(); if(!s) return "Não identificada"; if(s.includes("BUSCA")) return "Busca e apreensão"; if(s.includes("EMPR")) return "Revisional empréstimo"; if(s.includes("CART")) return "Revisional cartão"; if(s.includes("REVISIONAL")) return "Revisional veicular"; if(s.includes("CÍVEL")||s.includes("CIVEL")) return "Cível"; return title(a); };
+
+let ROWS = [], ROWS_C = [], ROWS_H = [], MESES = {}, MESES_C = {}, MESES_H = {}, sel = "todos", sortK = "mes", sortDir = -1, abertos = null;
+// Contratos de agosto/2026 em diante vêm da coleção "contratos" (tarefa mensal);
+// o histórico (fev/2023 a mai/2026, planilha consolidada) vem da "historico",
+// um documento por mês com a lista de contratos dentro.
+function juntar(){ ROWS = ROWS_C.concat(ROWS_H); MESES = Object.assign({}, MESES_H, MESES_C); }
+const ehAno = s => /^\d{4}$/.test(s);
+
+function contratos(rows){ return rows.filter(r => !r.outro_mes); }
+function resumo(rows, mesDoc){
+  const cs = contratos(rows);
+  const tot = cs.reduce((s,r)=>s+(r.valor_total||0),0);
+  const nT = cs.filter(r=>r.valor_total!=null).length;
+  const ent = rows.reduce((s,r)=>s+(r.entrada||0),0);
+  const parc = cs.filter(r=>r.parcelas_qtd>0 && r.parcelas_valor>0);
+  return {
+    n: cs.length, tot, ticket: nT ? tot/nT : null,
+    entradas: (() => { const ms=[...new Set(rows.map(r=>r.mes))]; return ms.reduce((s,m)=>{ const c=MESES[m]&&MESES[m].caixa; return s + (c!=null ? c : rows.filter(r=>r.mes===m).reduce((a,r)=>a+(r.entrada||0),0)); },0); })(),
+    receber: cs.reduce((s,r)=>s+((r.parcelas_qtd||0)*(r.parcelas_valor||0)),0),
+    prazo: parc.length ? parc.reduce((s,r)=>s+r.parcelas_qtd,0)/parc.length : null,
+    parcela: parc.length ? parc.reduce((s,r)=>s+r.parcelas_valor,0)/parc.length : null,
+    ufs: [...new Set(cs.map(r=>r.uf).filter(Boolean))].sort(),
+    cartao: cs.filter(r=>r.forma_parcelas==="Cartão").length,
+    boleto: cs.filter(r=>r.forma_parcelas==="Boleto").length,
+    pix: cs.filter(r=>r.forma_parcelas==="PIX").length,
+  };
+}
+const mesesOrd = () => [...new Set(ROWS.map(r=>r.mes))].sort();
+const rowsSel = () => sel==="todos" ? ROWS : ehAno(sel) ? ROWS.filter(r=>r.mes.startsWith(sel)) : ROWS.filter(r=>r.mes===sel);
+const rotSel = () => sel==="todos" ? "todos os meses" : ehAno(sel) ? "o ano de " + sel : rotL(sel);
+
+function statusMes(m){
+  const d = MESES[m] || {};
+  return d.conciliado ? (/CRM/.test(d.conciliado) ? "conferido com o CRM" : "conferido") : d.fonte==="planilha do mês" ? "planilha conferida" : /consolidada/.test(d.fonte||"") ? "planilha consolidada" : d.previa ? "prévia" : "não conferido";
+}
+function renderPeriodo(){
+  const ms = mesesOrd().slice().reverse();
+  const el = document.getElementById("periodo");
+  const tot = resumo(ROWS);
+  const anos = [...new Set(ms.map(m=>m.slice(0,4)))];
+  if (!abertos){ abertos = new Set([anos[0]]); if (sel!=="todos") abertos.add(sel.slice(0,4)); }
+  let html = `<button class="mesbtn todos" data-m="todos" aria-current="${sel==="todos"}"><b>Todos os meses</b><span class="qt">${tot.n}</span><span class="vl">${brl(tot.tot)}</span></button>`;
+  anos.forEach(ano => {
+    const ra = resumo(ROWS.filter(x=>x.mes.startsWith(ano))), aberto = abertos.has(ano);
+    html += `<button class="ano" data-ano="${ano}" aria-expanded="${aberto}" aria-current="${sel===ano}"><span>${aberto?"▾":"▸"} ${ano}</span><small>${ra.n} · ${brlK(ra.tot)}</small></button><div class="meses-ano" ${aberto?"":"hidden"}>`;
+    html += `<button class="mesbtn" data-m="${ano}" aria-current="${sel===ano}"><b>Ano inteiro</b><span class="qt">${ra.n}</span><span class="vl">${brl(ra.tot)}</span></button>`;
+    ms.filter(m=>m.startsWith(ano)).forEach(m => {
+      const r = resumo(ROWS.filter(x=>x.mes===m));
+      html += `<button class="mesbtn" data-m="${m}" aria-current="${sel===m}"><b>${MESL[+m.slice(5)-1]}</b><span class="qt">${r.n}</span><span class="vl">${brl(r.tot)}</span><span class="st">${statusMes(m)}</span></button>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+  el.querySelectorAll(".mesbtn").forEach(b=>b.onclick=()=>{ sel=b.dataset.m; try{localStorage.setItem("painel-sel",sel)}catch(e){} render(); window.scrollTo({top:0,behavior:"smooth"}); });
+  el.querySelectorAll(".ano").forEach(b=>b.onclick=()=>{ const a=b.dataset.ano; abertos.has(a) ? abertos.delete(a) : abertos.add(a); renderPeriodo(); });
+  const ord = mesesOrd();
+  document.getElementById("periodo-rotulo").textContent = sel==="todos" ? `Todos os meses · ${rotL(ord[0])} a ${rotL(ord[ord.length-1]).toLowerCase()}` : ehAno(sel) ? `Ano de ${sel} · ${ord.filter(m=>m.startsWith(sel)).length} meses` : rotL(sel) + " · " + statusMes(sel);
+}
+
+function delta(atual, anterior){
+  if (atual==null || !anterior) return "";
+  const p = (atual-anterior)/anterior*100;
+  if (!isFinite(p)) return "";
+  return ` <span class="${p>=0?"d-up":"d-down"}">${p>=0?"▲":"▼"} ${Math.abs(p).toLocaleString("pt-BR",{maximumFractionDigits:0})}% vs ${ehAno(sel)?"ano anterior":"mês anterior"}</span>`;
+}
+function renderKpis(){
+  const r = resumo(rowsSel());
+  let ant = null;
+  if (ehAno(sel)){ const rp = ROWS.filter(x=>x.mes.startsWith(String(+sel-1))); if (rp.length) ant = resumo(rp); }
+  else if (sel!=="todos"){ const pm = addM(sel,-1); const rp = ROWS.filter(x=>x.mes===pm); if (rp.length) ant = resumo(rp); }
+  const nMeses = sel==="todos" || ehAno(sel) ? [...new Set(rowsSel().map(x=>x.mes))].length : 1;
+  const items = [
+    [r.n, "Contratos fechados", sel==="todos" || (ehAno(sel) && !ant) ? `média de ${(r.n/nMeses).toLocaleString("pt-BR",{maximumFractionDigits:1})} por mês` : (ant? delta(r.n, ant.n) : "")],
+    [brl(r.tot), "Honorários contratados", ant ? delta(r.tot, ant.tot) : `${nMeses} ${nMeses>1?"meses":"mês"}`],
+    [brl(r.ticket), "Ticket médio", ant ? delta(r.ticket, ant.ticket) : "honorários por contrato"],
+    [brl(r.entradas), "Entradas", ant ? delta(r.entradas, ant.entradas) : ([...new Set(rowsSel().map(x=>x.mes))].some(m=>MESES[m]&&MESES[m].caixa!=null) ? "até jul/26 pelo caixa das planilhas" : "valor de entrada dos contratos")],
+    [brl(r.receber), "Parcelado nos contratos", "parcelas × valor; o que ainda vence está na projeção"],
+    [r.prazo==null?"—":r.prazo.toLocaleString("pt-BR",{maximumFractionDigits:1})+"×", "Prazo médio", `parcela média ${brl(r.parcela)}`],
+    [r.ufs.length, "Estados atendidos", r.ufs.join(" · ")],
+    r.pix ? [`${r.boleto} · ${r.cartao} · ${r.pix}`, "Boleto · Cartão · PIX", `${Math.round(r.cartao/r.n*100)}% no cartão recorrente`]
+          : [`${r.boleto} · ${r.cartao}`, "Boleto · Cartão", r.n ? `${Math.round(r.cartao/r.n*100)}% no cartão recorrente` : ""],
+  ];
+  document.getElementById("kpis").innerHTML = items.map(([v,l,s])=>`<div class="kpi"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join("");
+}
+
+function miniBarras(titulo, ms, valores, fmt){
+  const W=560,H=170,pl=8,pr=8,pt=20,pb=24, max=Math.max(1,...valores.map(v=>v||0));
+  const muitos = ms.length > 12;
+  const bw=(W-pl-pr)/ms.length, gap=Math.min(14,bw*.3);
+  const ativo = m => sel==="todos" || sel===m || (ehAno(sel) && m.startsWith(sel));
+  const ultimo = ms[ms.length-1];
+  const bars = ms.map((m,i)=>{
+    const v=valores[i]||0, h=(H-pt-pb)*v/max, x=pl+i*bw+gap/2, y=H-pb-h, on = ativo(m), cx=(x+(bw-gap)/2).toFixed(1);
+    const mostraValor = !muitos || sel===m || (sel==="todos" && m===ultimo);
+    const mostraMes = !muitos || m.endsWith("-01") || i===0;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(bw-gap,1).toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="${muitos?1:2}" fill="${on?"var(--accent)":"var(--accent-2)"}"><title>${rotL(m)}: ${fmt(v)}</title></rect>`
+      + (mostraValor ? `<text x="${cx}" y="${(y-5).toFixed(1)}" text-anchor="middle" class="lbl">${fmt(v)}</text>` : "")
+      + (mostraMes ? `<text x="${muitos ? (x).toFixed(1) : cx}" y="${H-8}" text-anchor="${muitos?"start":"middle"}">${muitos ? (i===0 ? rot(m) : m.slice(0,4)) : rot(m)}</text>` : "");
+  }).join("");
+  return `<div class="panel"><h3>${titulo}</h3><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${titulo} por mês"><line x1="${pl}" x2="${W-pr}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>${bars}</svg></div>`;
+}
+function renderEvolucao(){
+  const ms = mesesOrd(), rs = ms.map(m=>resumo(ROWS.filter(r=>r.mes===m)));
+  const n = v => v.toLocaleString("pt-BR");
+  document.getElementById("evolucao").innerHTML =
+    miniBarras("Contratos fechados", ms, rs.map(r=>r.n), n) +
+    miniBarras("Honorários contratados", ms, rs.map(r=>r.tot), brlK) +
+    miniBarras("Ticket médio", ms, rs.map(r=>r.ticket||0), brlK) +
+    miniBarras("Entradas", ms, rs.map(r=>r.entradas), brlK);
+}
+
+function renderProjecao(){
+  const cs = contratos(rowsSel()).filter(r=>r.parcelas_qtd>0 && r.parcelas_valor>0 && ym(r.parcelas_inicio));
+  const hoje = new Date(); const base = hoje.getFullYear()+"-"+String(hoje.getMonth()+1).padStart(2,"0");
+  const ms = Array.from({length:12},(_,i)=>addM(base,i));
+  const val = ms.map(m => cs.reduce((s,r)=>{ const ini=ym(r.parcelas_inicio), fim=ym(r.parcelas_fim)||addM(ini,r.parcelas_qtd-1); return s + (m>=ini && m<=fim ? r.parcelas_valor : 0); },0));
+  const W=880,H=190,pl=8,pr=8,pt=20,pb=26,max=Math.max(1,...val), bw=(W-pl-pr)/ms.length, gap=10;
+  document.getElementById("projecao").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Parcelas a receber nos próximos 12 meses"><line x1="${pl}" x2="${W-pr}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/>` +
+    ms.map((m,i)=>{ const h=(H-pt-pb)*val[i]/max, x=pl+i*bw+gap/2, y=H-pb-h;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-gap).toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="2" fill="${i===0?"var(--accent)":"var(--accent-2)"}"><title>${rotL(m)}: ${brl(val[i])}</title></rect>
+        <text x="${(x+(bw-gap)/2).toFixed(1)}" y="${(y-6).toFixed(1)}" text-anchor="middle" class="${i===0?"lbl":""}">${brlK(val[i])}</text>
+        <text x="${(x+(bw-gap)/2).toFixed(1)}" y="${H-9}" text-anchor="middle">${rot(m)}</text>`; }).join("") + `</svg>`;
+  document.getElementById("projecao-nota").textContent = `Soma das parcelas que vencem em cada mês, pelas datas do contrato, para os contratos ${sel==="todos"?"de todos os meses":"de "+rotL(sel)}. Não desconta atraso nem inadimplência.`;
+}
+
+function dist(id, rows, keyFn, opts={}){
+  const m = {}; rows.forEach(r=>{ const k=keyFn(r); if(k==null) return; (m[k] ||= {n:0,v:0}); m[k].n++; m[k].v+=r.valor_total||0; });
+  let arr = Object.entries(m);
+  arr = opts.ordem ? arr.sort((a,b)=>opts.ordem.indexOf(a[0])-opts.ordem.indexOf(b[0])) : arr.sort((a,b)=>b[1].n-a[1].n||b[1].v-a[1].v);
+  if (opts.top) arr = arr.slice(0, opts.top);
+  const max = Math.max(1,...arr.map(a=>a[1].n));
+  document.getElementById(id).innerHTML = arr.map(([k,o])=>`<div class="bar"><span>${esc(k)}</span><span class="tr"><span class="fi" style="width:${100*o.n/max}%"></span></span><span class="n">${o.n} · tm ${brlK(o.v/o.n)}</span></div>`).join("") || '<div class="meta">Sem contratos no período.</div>';
+}
+function renderDist(){
+  const cs = contratos(rowsSel());
+  dist("d-acao", cs, r=>acaoNome(r.tipo_acao));
+  dist("d-uf", cs, r=>r.uf||"—");
+  dist("d-fp", cs, r=>r.forma_parcelas||"—");
+  dist("d-banco", cs, r=>r.banco_adverso ? title(r.banco_adverso).replace(/^Banco /,"") : null, {top:8});
+  const faixasP = ["À vista","até 12×","13 a 18×","19 a 24×","25× ou mais"];
+  dist("d-prazo", cs, r=> r.parcelas_qtd==null ? null : r.parcelas_qtd===0 ? faixasP[0] : r.parcelas_qtd<=12 ? faixasP[1] : r.parcelas_qtd<=18 ? faixasP[2] : r.parcelas_qtd<=24 ? faixasP[3] : faixasP[4], {ordem:faixasP});
+  const faixasV = ["até R$ 5 mil","R$ 5 a 10 mil","R$ 10 a 15 mil","acima de R$ 15 mil"];
+  dist("d-faixa", cs, r=> r.valor_total==null ? null : r.valor_total<=5000 ? faixasV[0] : r.valor_total<=10000 ? faixasV[1] : r.valor_total<=15000 ? faixasV[2] : faixasV[3], {ordem:faixasV});
+}
+
+function renderLeituras(){
+  const cs = contratos(rowsSel()), out = [];
+  if (!cs.length){ document.getElementById("leituras").innerHTML = ""; return; }
+  const ms = mesesOrd(), rs = ms.map(m=>[m,resumo(ROWS.filter(r=>r.mes===m))]);
+  if (sel==="todos" && rs.length>1){
+    const best = rs.slice().sort((a,b)=>b[1].tot-a[1].tot)[0];
+    out.push(["Melhor mês", `${rotL(best[0])}: ${best[1].n} contratos e ${brl(best[1].tot)} em honorários.`]);
+    const porAno = {}; rs.forEach(([m,r])=>{ const a=m.slice(0,4); (porAno[a] ||= {n:0,t:0,m:0}); porAno[a].n+=r.n; porAno[a].t+=r.tot; porAno[a].m++; });
+    const anosL = Object.keys(porAno).sort();
+    if (anosL.length>1) out.push(["Ano a ano", anosL.map(a=>`${a}: ${porAno[a].n} contratos, ${brlK(porAno[a].t)}${porAno[a].m<12?" ("+porAno[a].m+" meses)":""}`).join(" · ")]);
+    const [u, p] = [rs[rs.length-1], rs[rs.length-2]];
+    out.push(["Último mês", `${rotL(u[0])} fechou ${u[1].n} contratos, contra ${p[1].n} em ${rotL(p[0]).toLowerCase()}. Ticket médio foi de ${brl(p[1].ticket)} para ${brl(u[1].ticket)}.`]);
+  }
+  const porAcao = {}; cs.forEach(r=>{ const k=acaoNome(r.tipo_acao); (porAcao[k] ||= []).push(r.valor_total||0); });
+  const ac = Object.entries(porAcao).map(([k,v])=>[k,v.length,v.reduce((a,b)=>a+b,0)/v.length]).sort((a,b)=>b[2]-a[2]);
+  if (ac.length>1) out.push(["Ticket por ação", ac.map(([k,n,t])=>`${k}: ${brl(t)} (${n})`).join(" · ")]);
+  const porUf = {}; cs.forEach(r=>{ if(r.uf) porUf[r.uf]=(porUf[r.uf]||0)+1; });
+  const ufs = Object.entries(porUf).sort((a,b)=>b[1]-a[1]);
+  if (ufs.length){ const top3 = ufs.slice(0,3), sh = top3.reduce((s,x)=>s+x[1],0)/cs.length*100;
+    out.push(["Concentração geográfica", `${top3.map(x=>x[0]+" ("+x[1]+")").join(", ")} somam ${Math.round(sh)}% dos contratos. ${ufs.length} Estados no período.`]); }
+  const car = cs.filter(r=>r.forma_parcelas==="Cartão"), bol = cs.filter(r=>r.forma_parcelas==="Boleto");
+  const tk = a => a.length ? a.reduce((s,r)=>s+(r.valor_total||0),0)/a.length : null;
+  if (car.length && bol.length) out.push(["Cartão x boleto", `${Math.round(car.length/cs.length*100)}% no cartão recorrente. Ticket médio no cartão ${brl(tk(car))}, no boleto ${brl(tk(bol))}.`]);
+  const ent = cs.filter(r=>r.entrada!=null && r.valor_total), pct = ent.length ? ent.reduce((s,r)=>s+r.entrada/r.valor_total,0)/ent.length*100 : null;
+  if (pct!=null) out.push(["Entrada sobre honorários", `A entrada cobre em média ${pct.toLocaleString("pt-BR",{maximumFractionDigits:1})}% dos honorários; o resto vem em ${resumo(cs).prazo?.toLocaleString("pt-BR",{maximumFractionDigits:1})} parcelas em média.`]);
+  document.getElementById("leituras").innerHTML = out.map(([t,x])=>`<div class="leitura"><b>${t}</b>${esc(x)}</div>`).join("");
+}
+
+const selA = document.getElementById("f-acao"), selU = document.getElementById("f-uf"), selF = document.getElementById("f-fp");
+function preencherFiltros(){
+  const a0 = selA.value, u0 = selU.value;
+  selA.length = 1; selU.length = 1;
+  [...new Set(ROWS.map(r=>acaoNome(r.tipo_acao)))].sort().forEach(a=>selA.add(new Option(a,a)));
+  [...new Set(ROWS.map(r=>r.uf).filter(Boolean))].sort().forEach(u=>selU.add(new Option(u,u)));
+  selA.value = a0; selU.value = u0;
+}
+function renderTabela(){
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const vmin = parseFloat(document.getElementById("vmin").value), vmax = parseFloat(document.getElementById("vmax").value);
+  let rows = rowsSel().map(r=>({...r, acao: acaoNome(r.tipo_acao), ini: ym(r.parcelas_inicio)})).filter(r =>
+    (!q || [r.cliente,r.banco_adverso,r.cidade].join(" ").toLowerCase().includes(q)) &&
+    (!selA.value || r.acao===selA.value) && (!selU.value || r.uf===selU.value) && (!selF.value || r.forma_parcelas===selF.value) &&
+    (isNaN(vmin) || (r.valor_total!=null && r.valor_total>=vmin)) && (isNaN(vmax) || (r.valor_total!=null && r.valor_total<=vmax)));
+  rows.sort((x,y)=>{ const a=x[sortK], b=y[sortK]; if(a==null&&b==null) return 0; if(a==null) return 1; if(b==null) return -1;
+    return (typeof a==="number" ? a-b : String(a).localeCompare(String(b),"pt-BR"))*sortDir || String(x.cliente).localeCompare(y.cliente,"pt-BR"); });
+  const nota = r => [r.outro_mes?"contrato de outro mês":"", r.previa?"prévia, não conferida":"", r.ajuste, r.obs].filter(Boolean).join(" · ");
+  document.getElementById("tb").innerHTML = rows.map(r=>`<tr>
+    <td>${rot(r.mes)}</td>
+    <td><div class="nome">${esc(title(r.cliente))}</div><div class="meta">${esc([r.cidade, r.banco_adverso?title(r.banco_adverso):""].filter(Boolean).join(" · "))}</div>${nota(r)?`<div class="meta" style="color:var(--warn)">${esc(nota(r))}</div>`:""}</td>
+    <td>${esc(r.acao)}</td><td>${esc(r.uf||"—")}</td>
+    <td class="num">${r.outro_mes?"—":brl(r.valor_total)}</td>
+    <td class="num">${brl(r.entrada)}${(r.entrada_partes||[]).length>1?`<div class="meta">${r.entrada_partes.map(p=>brl(p.valor)).join(" + ")}</div>`:""}</td>
+    <td class="num">${r.entrada_paga_asaas==null?"—":brl(r.entrada_paga_asaas)}</td>
+    <td class="num">${r.parcelas_qtd===0?"à vista":(r.parcelas_qtd??"—")}</td><td class="num">${r.parcelas_qtd===0?"—":brl(r.parcelas_valor)}</td>
+    <td class="num">${r.ini?rot(r.ini):"—"}</td>
+    <td>${r.forma_parcelas==="Cartão"?'<span class="pill p-ok">Cartão</span>':r.forma_parcelas?'<span class="pill p-n">Boleto</span>':"—"}</td></tr>`).join("")
+    || `<tr><td colspan="11" class="meta">Nenhum contrato atende a esses filtros.</td></tr>`;
+  const s = k => rows.filter(r=>!r.outro_mes).reduce((a,r)=>a+(r[k]||0),0);
+  document.getElementById("tf").innerHTML = `<tr><td colspan="4">Total (${rows.filter(r=>!r.outro_mes).length} contratos)</td><td class="num">${brl(s("valor_total"))}</td><td class="num">${brl(rows.reduce((a,r)=>a+(r.entrada||0),0))}</td><td class="num">${brl(rows.reduce((a,r)=>a+(r.entrada_paga_asaas||0),0))}</td><td colspan="4"></td></tr>`;
+  document.getElementById("count").textContent = `${rows.length} linhas · ${sel==="todos"?"todos os meses":rotL(sel)}`;
+  document.querySelectorAll("th").forEach(th=>th.setAttribute("aria-sort", th.dataset.k===sortK ? (sortDir>0?"ascending":"descending") : "none"));
+}
+function renderFontes(){
+  const ms = mesesOrd(), grupos = [];
+  ms.forEach(m => { const st = statusMes(m), g = grupos[grupos.length-1];
+    if (g && g.st===st) g.fim = m; else grupos.push({st, ini:m, fim:m}); });
+  document.getElementById("fontes").innerHTML = grupos.map(g => {
+    const cls = /conferid/.test(g.st) ? "p-ok" : g.st==="prévia"||g.st==="não conferido" ? "p-warn" : "p-n";
+    return `<span class="pill ${cls}">${rot(g.ini)}${g.fim!==g.ini?" a "+rot(g.fim):""}: ${g.st}</span>`; }).join("");
+}
+function render(){
+  if (sel!=="todos" && !(ehAno(sel) ? mesesOrd().some(m=>m.startsWith(sel)) : mesesOrd().includes(sel))) sel = "todos";
+  renderPeriodo(); renderKpis(); renderEvolucao(); renderLeituras(); renderProjecao(); renderDist(); renderTabela(); renderFontes();
+}
+["q","vmin","vmax"].forEach(id=>document.getElementById(id).addEventListener("input",renderTabela));
+[selA,selU,selF].forEach(s=>s.addEventListener("change",renderTabela));
+document.querySelectorAll("th").forEach(th=>{ const go=()=>{ if(sortK===th.dataset.k) sortDir*=-1; else { sortK=th.dataset.k; sortDir=["valor_total","entrada","entrada_paga_asaas","parcelas_qtd","parcelas_valor","mes"].includes(sortK)?-1:1; } renderTabela(); };
+  th.addEventListener("click",go); th.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } }); });
+try { const s = localStorage.getItem("painel-sel"); if (s) sel = s; } catch(e) {}
+
+// Fonte principal (desde 23/10/2026): o arquivo painel-comercial-dados.json no
+// Google Drive, regravado de hora em hora no Mac do escritório e lido aqui
+// pelo conector do Drive de quem abre o painel. Se o Drive não estiver
+// disponível para essa pessoa, o painel mostra a cópia guardada no banco.
+const ARQUIVO_DRIVE = "1z7Z4-_f3Qx0js3GNuJ4XtT3ljui6Xzrg";
+let FONTE = null, ATUALIZADO = null;
+function aviso(texto){ const el = document.getElementById("aviso"); el.textContent = texto || ""; el.hidden = !texto; }
+function mostrarAtualizado(){
+  const el = document.getElementById("atualizado");
+  if (FONTE === "drive" && ATUALIZADO){ const [d,h] = ATUALIZADO.split("T"); el.textContent = "Dados de " + d.split("-").reverse().join("/") + " às " + h + " · atualiza de hora em hora"; }
+  else if (FONTE === "banco") el.textContent = "Mostrando a cópia guardada no painel";
+  else el.textContent = "";
+}
+function pronto(){
+  const estado = document.getElementById("estado");
+  if (!ROWS.length){ estado.textContent = "Nenhum mês carregado ainda."; estado.hidden = false; document.getElementById("app").hidden = true; return; }
+  estado.hidden = true; document.getElementById("app").hidden = false; preencherFiltros(); render(); mostrarAtualizado();
+}
+function lerArquivo(payload){
+  let p = payload;
+  if (typeof p === "string") { try { p = JSON.parse(p); } catch(e) { return null; } }
+  const b64 = p && p.content;
+  if (typeof b64 !== "string") return null;
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+}
+const AVISO_DRIVE = {
+  server_not_connected: "Para ver os números mais recentes, conecte o Google Drive em claude.ai → Configurações → Conectores e recarregue a página.",
+  needs_reauth: "O Google Drive pediu para conectar de novo: claude.ai → Configurações → Conectores → Google Drive. Depois recarregue a página.",
+  not_in_manifest: "O painel não tem permissão para ler o Google Drive nesta visita. Recarregue a página e permita o Google Drive para ver os números mais recentes.",
+  selection_required: "Há mais de um Google Drive conectado: escolha qual usar no aviso do Claude e recarregue a página.",
+  tool_error: "Não consegui abrir o arquivo de dados no Google Drive. Ele precisa estar compartilhado com você (peça à Dra. Caroline).",
+  blocked_by_policy: "A organização bloqueou a leitura do Google Drive neste painel.",
+};
+
+(async () => {
+  const estado = document.getElementById("estado");
+  const [db, mcp] = window.claude ? await Promise.all([window.claude.use("db"), window.claude.use("mcp")]) : [null, null];
+
+  // 1) Google Drive (fonte principal)
+  if (mcp){
+    mcp.watchTool("Google Drive", "download_file_content", {fileId: ARQUIVO_DRIVE}, ev => {
+      if (ev.type === "data"){
+        let d = null;
+        try { d = lerArquivo(ev.result.payload); } catch(e) { d = null; }
+        if (!d || !Array.isArray(d.contratos)){ if (FONTE !== "drive") aviso("O arquivo de dados do Google Drive veio num formato inesperado; mostrando a cópia guardada no painel."); return; }
+        FONTE = "drive"; ATUALIZADO = d.gerado_em || null;
+        ROWS = d.contratos; MESES = d.meses || {};
+        aviso(""); pronto();
+      } else {
+        const code = ev.error && ev.error.code;
+        if (["needs_reauth","server_not_connected","not_in_manifest","blocked_by_policy","approval_required","selection_required"].includes(code) && FONTE === "drive"){
+          FONTE = null; ROWS = []; MESES = {}; juntar(); pronto();
+        }
+        if (FONTE !== "drive") aviso(AVISO_DRIVE[code] || "Não consegui ler o Google Drive agora; mostrando a cópia guardada no painel. Recarregue em alguns minutos.");
+      }
+    }, {refetchInterval: 15 * 60 * 1000, cache: {staleTime: 5 * 60 * 1000}});
+  }
+
+  // 2) Cópia guardada no banco do painel (reserva)
+  if (!db){
+    if (!mcp) estado.textContent = "Entre na sua conta do Claude para ver os contratos.";
+    return;
+  }
+  let chegou = {c:false, h:false};
+  const usarBanco = () => { if (FONTE === "drive") return; juntar(); if (chegou.c && chegou.h){ FONTE = "banco"; pronto(); } };
+  db.collection("historico").limit(500).onSnapshot(snap => { ROWS_H = []; MESES_H = {};
+      snap.docs.forEach(d => { const x = d.data(); if (!x) return; const {linhas, ...meta} = x; MESES_H[d.id] = meta; (linhas||[]).forEach(l => ROWS_H.push(l)); });
+      chegou.h = true; usarBanco(); },
+    () => { chegou.h = true; usarBanco(); });
+  db.collection("meses").limit(200).onSnapshot(snap => { MESES_C = {}; snap.docs.forEach(d => { MESES_C[d.id] = d.data(); }); usarBanco(); }, () => {});
+  db.collection("contratos").limit(1000).onSnapshot(snap => { ROWS_C = snap.docs.map(d => d.data()).filter(Boolean); chegou.c = true; usarBanco(); },
+    e => { if (FONTE !== "drive") estado.textContent = "Não consegui ler os contratos agora (" + (e && e.code || "erro") + "). Recarregue a página em instantes."; });
+})();
+</script>

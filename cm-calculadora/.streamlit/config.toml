@@ -1,0 +1,24 @@
+# Privacidade: sem estatísticas de uso e acesso restrito a este computador.
+[browser]
+gatherUsageStats = false
+serverAddress = "localhost"
+
+[server]
+address = "127.0.0.1"
+port = 8501
+headless = true
+maxUploadSize = 200
+enableXsrfProtection = true
+enableCORS = true
+runOnSave = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = "type"
+
+[theme]
+base = "light"
+primaryColor = "#1F3A5F"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F5F8"
+textColor = "#1A1D21"

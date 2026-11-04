@@ -1,0 +1,14 @@
+# Clientes que JÁ TÊM processo ou caso no Astrea e cuja nova contratação é
+# matéria NOVA, não desdobramento da antiga.
+#
+# A automação nunca decide isso sozinha: cliente que volta a contratar e
+# cliente que já litiga a mesma causa são indistinguíveis para ela. Quando
+# você confirma que é matéria nova, escreva o nome aqui e o caso é aberto
+# normalmente, com as tarefas do tipo.
+#
+# Formato:  NOME DO CLIENTE (ou da pasta) = motivo
+# Acentos e maiúsculas não importam. Linhas com # são ignoradas.
+#
+# Depois que o caso é aberto, a linha pode ficar — ela não reabre nada, porque
+# a automação confere o título antes de criar.
+

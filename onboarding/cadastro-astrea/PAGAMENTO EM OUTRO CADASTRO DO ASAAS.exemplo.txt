@@ -1,0 +1,13 @@
+# Clientes cuja ENTRADA foi cobrada em outro cadastro do Asaas.
+#
+# A automação procura a entrada pelo CPF do cliente. Quando o comercial
+# cadastra a cobrança no Asaas com o CPF de outra pessoa (um parente que
+# paga, por exemplo), o caso não abre sozinho. Indique aqui o cadastro do
+# Asaas onde a entrada está, e a próxima rodada abre o caso.
+#
+# Formato:  NOME DO CLIENTE (ou da pasta) = id do cadastro no Asaas (cus_...)
+# Acentos e maiúsculas não importam. O que vem depois de # é ignorado.
+#
+# Para tirar, apague a linha.
+
+# ROBERTA ... = cus_000208160112   # cadastro "JAIR FELIX DE SANTANA"; entrada de R$ 697 paga em 21/10. Completar o nome quando a pasta dela existir.

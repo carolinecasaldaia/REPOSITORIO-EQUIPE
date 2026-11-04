@@ -1,0 +1,14 @@
+# Quando o contrato de honorários não descreve o caso que será realmente
+# aberto, escreva aqui o tipo certo. Vale só para o cliente listado.
+#
+# Formato:   NOME DO CLIENTE (ou da pasta) = TIPO
+# Tipos aceitos: REVISIONAL VEICULAR, REVISIONAL EMPRÉSTIMO,
+#                REVISIONAL CARTÃO DE CRÉDITO, BUSCA E APREENSÃO, CÍVEL
+#
+# A correção muda o título do caso, as tarefas e o responsável. Acentos e
+# maiúsculas não importam. Linhas com # são ignoradas.
+#
+# 19/10/2026 — o contrato da Dione descreve Ação Revisional de Empréstimo com
+# garantia de veículo (Banco Sicredi), mas o caso é defesa em busca e
+# apreensão. Confirmado por ela.
+

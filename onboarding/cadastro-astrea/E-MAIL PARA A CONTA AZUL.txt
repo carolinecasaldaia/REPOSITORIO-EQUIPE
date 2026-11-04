@@ -1,0 +1,36 @@
+Para: api@contaazul.com
+Assunto: Aplicativo não exibe tela de autorização — OAuth2 não inicia
+
+Bom dia,
+
+Criei um aplicativo no portal de desenvolvedores para integrar nosso sistema
+interno à API v2 e a autorização não chega a começar: ao abrir a URL de
+autorização, o navegador vai para a tela do Conta Azul, mas a tela pedindo
+para autorizar o aplicativo nunca aparece — e, por consequência, nenhum
+código de autorização é devolvido.
+
+Dados para verificação:
+
+- Aplicativo: Automação Jurídica (criado em 18/08/2026)
+- Client ID: (informo se necessário)
+- URL de autorização usada:
+  https://auth.contaazul.com/login?response_type=code&client_id=...&redirect_uri=...&scope=openid+profile+aws.cognito.signin.user.admin
+- URL de redirecionamento cadastrada hoje: https://contaazul.com
+
+Gostaria de confirmar três pontos:
+
+1. A URL de autorização correta para a API v2 é essa? Se não, qual é?
+2. O aplicativo precisa de alguma liberação de vocês para começar a funcionar?
+3. Nossa conta está no plano adequado para uso da API? (a documentação indica
+   que a integração funciona apenas com Conta Azul Pro)
+
+Também gostaria de cadastrar http://localhost:8765/callback como URL de
+redirecionamento, já que a integração roda em uma máquina local. É possível?
+
+O objetivo é simples: consultar se a parcela de entrada de um cliente
+(boleto) consta como paga, antes de abrir o caso no nosso sistema jurídico.
+
+Obrigada,
+Caroline Macedo
+Caroline Macedo Sociedade Individual de Advocacia
+contato@carolinemacedoadv.com
