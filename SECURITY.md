@@ -15,14 +15,19 @@ Este repositório é **privado** e guarda só código, modelos e documentação.
 | Arquivos sensíveis ignorados pelo Git | `.gitignore` |
 | Arquivos sensíveis fora de imagens Docker | `.dockerignore` |
 | Varredura de credenciais em cada PR e push na `main` | `.github/workflows/seguranca.yml` (gitleaks) |
-| Varredura antes de cada commit local | `.pre-commit-config.yaml` + hook `.git/hooks/pre-commit` |
+| Bloqueio de commit com credencial (todos os repositórios da máquina) | hook global `~/.config/git/hooks/pre-commit` |
+| Nova checagem antes de enviar ao GitHub (todos os repositórios) | hook global `~/.config/git/hooks/pre-push` |
+| Hooks extras opcionais | `.pre-commit-config.yaml` |
 | Alertas de dependências vulneráveis | `.github/dependabot.yml` |
 
-Ativar a verificação local numa máquina nova:
+Se aparecer **"🔒 COMMIT BLOQUEADO"** ou **"🔒 ENVIO BLOQUEADO"**, não force
+(não use `--no-verify`): tire a credencial do arquivo, coloque no `.env` e peça ajuda.
+
+Ativar a proteção numa máquina nova: copiar os dois hooks para `~/.config/git/hooks/` e rodar
 
 ```bash
-brew install gitleaks pre-commit
-pre-commit install
+brew install gitleaks
+git config --global core.hooksPath ~/.config/git/hooks
 ```
 
 ## Se uma credencial vazar
