@@ -1,0 +1,375 @@
+<title>Painel Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: painel de fechamento mensal — resumo em números, depois decomposição, depois a lista operável */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --line:#dfe3ea; --fg:#18202c; --muted:#5d6878;
+  --accent:#1d4f91; --accent-soft:#e5edf8;
+  --good:#18794e; --good-soft:#e2f3ea; --bad:#b4232c; --bad-soft:#fbe7e8; --warn:#9a6200; --warn-soft:#fdf1d8;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10141b; --surface:#171d27; --line:#2a3342; --fg:#e7ebf1; --muted:#9aa5b5;
+  --accent:#7fb0ef; --accent-soft:#1c2a3f;
+  --good:#5cc895; --good-soft:#14301f; --bad:#f07a80; --bad-soft:#3a1a1d; --warn:#e8b45a; --warn-soft:#352812;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141b; --surface:#171d27; --line:#2a3342; --fg:#e7ebf1; --muted:#9aa5b5;
+  --accent:#7fb0ef; --accent-soft:#1c2a3f;
+  --good:#5cc895; --good-soft:#14301f; --bad:#f07a80; --bad-soft:#3a1a1d; --warn:#e8b45a; --warn-soft:#352812;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 60px;display:flex;flex-direction:column;gap:28px}
+h1{font-size:1.75rem;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1.05rem;margin:0 0 12px;text-wrap:balance}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.sub{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .v{font-family:var(--mono);font-size:1.55rem;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .d{color:var(--muted);font-size:.85rem}
+.kpi.bad .v{color:var(--bad)} .kpi.good .v{color:var(--good)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.note{font-size:.85rem;color:var(--muted);margin:10px 0 0}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right}
+.mini td{font-size:.9rem}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;min-width:60px}
+.bar>i{display:block;height:100%;background:var(--bad)}
+.pill{display:inline-block;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.R{background:var(--good-soft);color:var(--good)} .pill.V{background:var(--bad-soft);color:var(--bad)} .pill.C{background:var(--warn-soft);color:var(--warn)} .pill.L{background:var(--line);color:var(--muted)} .pill.P{background:var(--accent-soft);color:var(--accent)}
+.tag{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:4px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.chip:focus-visible,input:focus-visible,select:focus-visible,th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,select{font:inherit;font-size:.88rem;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+#q{flex:1 1 200px;min-width:0}
+.range{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
+.range input{width:90px}
+.scroll{overflow-x:auto}
+th button{all:unset;cursor:pointer}
+th button::after{content:" ↕";opacity:.4}
+.foot{display:flex;flex-wrap:wrap;gap:16px;font-size:.88rem;color:var(--muted);margin-top:10px}
+.foot b{color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:.82rem;border:0;background:var(--surface);color:var(--fg);padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.flag{color:var(--warn);font-size:.75rem}
+[hidden]{display:none!important}
+#meses{flex-wrap:wrap;max-width:100%}
+#meses button[data-m^="ANO"]{font-weight:600}
+.stack{display:flex;height:10px;border-radius:4px;overflow:hidden;background:var(--line);min-width:80px}
+.stack>i{display:block;height:100%}
+.stack>i.as{background:var(--accent)} .stack>i.ca{background:var(--good)}
+.leg{display:inline-flex;align-items:center;gap:5px;margin-right:14px}
+.leg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+#tAno tbody tr{cursor:pointer}
+#tAno tbody tr:hover td{background:var(--accent-soft)}
+#tAno tfoot td{font-weight:600;border-top:2px solid var(--line)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Caroline Macedo Advocacia · ASAAS + Conta Azul</div>
+    <h1 id="titulo">Entradas e inadimplência</h1>
+    <div class="controls" style="margin-top:12px">
+      <div class="seg" role="group" aria-label="Mês" id="meses"></div>
+      <span class="tag" id="atualizado"></span>
+    </div>
+    <p class="sub">"Recebido no mês" considera a data em que o dinheiro caiu na conta. "Inadimplência" considera as cobranças que venceram no mês e seguem em aberto. Valores brutos, como o cliente pagou. Atualizado todo dia pela rotina automática.</p>
+    <p class="sub" id="avisos" hidden></p>
+  </header>
+
+  <div id="vazio" class="panel"><h2>Carregando os meses…</h2><p class="note">Os números vêm do banco desta página, que a rotina diária atualiza a partir do ASAAS e do Conta Azul. Se nada aparecer, a rotina ainda não gravou nenhum mês.</p></div>
+
+  <div id="anual" hidden style="display:flex;flex-direction:column;gap:28px">
+    <section class="kpis" id="kpisAno"></section>
+    <section class="panel">
+      <h2>Mês a mês</h2>
+      <p class="note" style="margin:0 0 10px"><span class="leg"><i style="background:var(--accent)"></i>ASAAS</span><span class="leg"><i style="background:var(--good)"></i>Conta Azul</span>Clique num mês para abrir o detalhe.</p>
+      <div class="scroll"><table class="mini" id="tAno"></table></div>
+      <p class="note" id="nAno"></p>
+    </section>
+  </div>
+
+  <div id="conteudo" hidden style="display:flex;flex-direction:column;gap:28px">
+  <section class="kpis" id="kpis"></section>
+
+  <section class="panel">
+    <h2 id="hFech">Recebido por mês de fechamento do contrato</h2>
+    <p class="sub" id="sFech" style="margin:0 0 12px"></p>
+    <div class="scroll"><table class="mini" id="tFech"></table></div>
+    <p class="note">Cada recebimento é ligado ao mês em que o cliente fechou contrato, pelo Painel Comercial (fev/2023 em diante), casando pelo nome. Quem tem mais de um contrato conta no mais recente até a data do pagamento. "Sem contrato identificado" é Pix avulso, parceiro ou nome que não bateu com o painel. Clique numa linha para ver as cobranças.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Por sistema</h2>
+    <div class="scroll"><table class="mini" id="tSrc"></table></div>
+    <p class="note">O Conta Azul mostra na tela o valor líquido, já sem a taxa de cerca de R$ 2,19 por boleto; aqui vale o bruto. Ficam fora os lançamentos da conta "ASAAS" dentro do Conta Azul (repetem recebimentos do ASAAS) e as parcelas zeradas por renegociação.</p>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>De onde veio o dinheiro</h2>
+      <table class="mini" id="tRec"></table>
+      <p class="note" id="nRec"></p>
+    </div>
+    <div class="panel">
+      <h2 id="hVenc">Carteira com vencimento no mês</h2>
+      <table class="mini" id="tVenc"></table>
+      <p class="note" id="nVenc"></p>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel">
+      <h2>Inadimplência por tipo de ação</h2>
+      <table class="mini" id="tAcao"></table>
+    </div>
+    <div class="panel">
+      <h2>Inadimplência por forma de pagamento</h2>
+      <table class="mini" id="tForma"></table>
+      <p class="note" id="nForma"></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Cobranças</h2>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Conjunto">
+        <button id="setV" aria-pressed="true">Vencimento no mês</button>
+        <button id="setR" aria-pressed="false">Recebidas no mês</button>
+        <button id="setA" aria-pressed="false">Todas</button>
+      </div>
+      <div class="seg" role="group" aria-label="Agrupar">
+        <button id="gP" aria-pressed="true">Por parcela</button>
+        <button id="gC" aria-pressed="false">Por cliente</button>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="chips" id="chS"></div>
+      <div class="chips" id="chT"></div>
+    </div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Buscar cliente">
+      <select id="fC" aria-label="Mês de fechamento do contrato"></select>
+      <select id="fS"><option value="">ASAAS e Conta Azul</option><option value="AS">Só ASAAS</option><option value="CA">Só Conta Azul</option></select>
+      <select id="fA"><option value="">Todas as ações</option><option value="RV">Revisional</option><option value="BA">Busca e Apreensão</option><option value="SE">Superendividamento</option><option value="CV">Cível</option><option value="PA">Parceiros</option><option value="--">Não identificada</option></select>
+      <select id="fF"><option value="">Todas as formas</option><option value="B">Boleto</option><option value="P">Pix</option><option value="C">Cartão</option><option value="L">Link de pagamento</option><option value="O">Outro (Pix direto)</option></select>
+      <span class="range">Valor R$ <input id="vMin" type="number" min="0" placeholder="mín"> a <input id="vMax" type="number" min="0" placeholder="máx"></span>
+    </div>
+    <div class="scroll"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <div class="foot" id="foot"></div>
+  </section>
+  </div>
+</div>
+
+<script>
+// Cada mês é um documento em `meses` (gravado pela rotina diária, PAINEL FINANCEIRO/coletar_financeiro.py).
+// linhas: src|cliente|centavos|tipo|ação|forma|vencimento|situação|pago|conjuntos|parcela
+const SRC={AS:'ASAAS',CA:'Conta Azul'};
+const T={E:'Entrada',H:'Parcela de honorários',X:'Pix avulso / parceiro'};
+const A={RV:'Revisional',BA:'Busca e Apreensão',SE:'Superendividamento',CV:'Cível',PA:'Parceiros','--':'Não identificada'};
+const F={B:'Boleto',P:'Pix',C:'Cartão',L:'Link de pagamento',O:'Outro (Pix direto)'};
+const S={R:'Recebida',V:'Vencida',C:'Cartão confirmado',P:'A vencer',L:'Baixada como perda'};
+const NOMES_MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const brl=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pct=x=>isFinite(x)?(x*100).toLocaleString('pt-BR',{maximumFractionDigits:1,minimumFractionDigits:1})+'%':'—';
+const sum=a=>a.reduce((s,x)=>s+x.c,0);
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const $=id=>document.getElementById(id);
+const dt=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';
+const HOJE=new Date(); const HOJE_ISO=new Date(HOJE.getTime()-HOJE.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+
+let DOCS={}, MES=null, SEL=null, ROWS=[];
+const st={set:'v',group:'p',s:new Set(['V']),t:new Set(),sort:{k:'due',dir:1}};
+
+function parse(doc){return (doc.linhas||[]).map((l,i)=>{const [src,n,c,t,a,f,venc,s,pago,fl,parc,fech]=l.split('|');
+  return {i,src,n,c:+c,t,a,f,venc,due:venc,d:dt(venc),s,p:pago?dt(pago).slice(0,5):'',r:fl.includes('r'),v:fl.includes('v'),parc,fech:fech||''}})}
+// Mês de fechamento do contrato (Painel Comercial): "do mês anterior" é o pedido dela de 21/10/2026.
+const mesAnt=m=>{const [a,n]=m.split('-').map(Number);return n===1?(a-1)+'-12':a+'-'+String(n-1).padStart(2,'0')};
+const nomeM=m=>m?NOMES_MES[+m.slice(5)-1]+'/'+m.slice(0,4):'';
+const curto=m=>m?m.slice(5)+'/'+m.slice(0,4):'—';
+
+function rowsTable(id,head,rows){$(id).innerHTML='<thead><tr>'+head.map((h,i)=>`<th${i?' class="r"':''}>${h}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((c,i)=>`<td${i?' class="r num"':''}>${c}</td>`).join('')+'</tr>').join('')+'</tbody>';}
+
+function resumo(){
+  const doc=DOCS[MES]; const [ano,m]=MES.split('-'); const nomeMes=NOMES_MES[+m-1];
+  const fechado=HOJE_ISO.slice(0,7)>MES;
+  $('titulo').textContent=`Entradas e inadimplência de ${nomeMes}/${ano}`;
+  const at=doc.atualizado_em||''; $('atualizado').textContent=at?`Atualizado em ${dt(at.slice(0,10))} às ${at.slice(11,16)}`:'';
+  $('avisos').hidden=!(doc.avisos&&doc.avisos.length); $('avisos').textContent=(doc.avisos||[]).join(' ');
+
+  const rec=ROWS.filter(x=>x.r), vencAll=ROWS.filter(x=>x.v&&x.s!=='L');
+  const venceu=vencAll.filter(x=>x.s!=='P'), aVencer=vencAll.filter(x=>x.s==='P');
+  const vencidas=venceu.filter(x=>x.s==='V'), perdas=ROWS.filter(x=>x.v&&x.s==='L');
+  const recE=rec.filter(x=>x.t==='E');
+  const bySrc=a=>`ASAAS ${brl(sum(a.filter(x=>x.src==='AS')))} · Conta Azul ${brl(sum(a.filter(x=>x.src==='CA')))}`;
+  const clientesV=new Set(vencidas.map(x=>x.n));
+  $('kpis').innerHTML=[
+    ['good',`Recebido em ${nomeMes}`,brl(sum(rec)),`${rec.length} recebimentos · ${bySrc(rec)}`],
+    ['','Entradas de contratos novos',brl(sum(recE)),`${recE.length} entradas recebidas · ${bySrc(recE)}`],
+    ['',fechado?`Carteira que venceu em ${nomeMes}`:`Carteira de ${nomeMes}`,brl(sum(vencAll)),fechado?`${vencAll.length} cobranças · ${bySrc(vencAll)}`:`${brl(sum(venceu))} já venceram até hoje · ${brl(sum(aVencer))} a vencer até o fim do mês`],
+    ['bad','Inadimplência',brl(sum(vencidas)),`${vencidas.length} parcelas de ${clientesV.size} clientes · ${pct(sum(vencidas)/sum(venceu))} do que ${fechado?'venceu':'já venceu'} · ${bySrc(vencidas)}`],
+  ].map(([c,l,v,d])=>`<div class="kpi ${c}"><div class="eyebrow">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+
+  rowsTable('tSrc',['','Recebido','Venceu até hoje','Em aberto','Taxa'],['AS','CA'].map(k=>{const r=rec.filter(x=>x.src===k),v=venceu.filter(x=>x.src===k),b=vencidas.filter(x=>x.src===k);return [SRC[k],brl(sum(r)),brl(sum(v)),brl(sum(b)),pct(sum(b)/sum(v))]}).concat([[`<b>Total</b>`,`<b>${brl(sum(rec))}</b>`,`<b>${brl(sum(venceu))}</b>`,`<b>${brl(sum(vencidas))}</b>`,`<b>${pct(sum(vencidas)/sum(venceu))}</b>`]]));
+
+  rowsTable('tRec',['Origem','Qtd','Valor','%'],Object.keys(T).map(k=>{const a=rec.filter(x=>x.t===k);return [T[k],a.length,brl(sum(a)),pct(sum(a)/sum(rec))]}).concat([['<b>Total</b>',`<b>${rec.length}</b>`,`<b>${brl(sum(rec))}</b>`,'<b>100%</b>']]));
+  const ini=MES+'-01', proxIni=(+m===12?(+ano+1)+'-01':ano+'-'+String(+m+1).padStart(2,'0'))+'-01';
+  const noMes=rec.filter(x=>x.due>=ini&&x.due<proxIni), atraso=rec.filter(x=>x.due<ini), antec=rec.filter(x=>x.due>=proxIni);
+  const painel=Math.round((doc.painel_entradas||0)*100);
+  let nota=`Do total, ${brl(sum(noMes))} (${noMes.length}) venciam no próprio mês, <b>${brl(sum(atraso))}</b> (${atraso.length}) eram parcelas atrasadas de meses anteriores e ${brl(sum(antec))} (${antec.length}) foram pagas antes do vencimento.`;
+  nota+=`<br><br><b>Entradas x Painel Comercial:</b> ${doc.painel_contratos||0} contratos com ${brl(painel)} de entrada combinada${doc.painel_previa?' (prévia: pastas ainda sem OK)':''}. Recebido como entrada: ${brl(sum(recE))}`+(sum(recE)!==painel?`, diferença de ${brl(sum(recE)-painel)}. Ela costuma vir de juros pagos sobre a entrada (o painel usa o valor do contrato), de parte de entrada de contrato do mês anterior paga neste mês, ou de entrada combinada que ainda não foi paga.`:'.');
+  if(MES==='2026-09') nota+=' Em setembro: R$ 125,69 de juros (Vektor Pharma e Walleska) e R$ 250,00 da 2ª parte da entrada do Sidnei Martins Rosas, paga em 01/09 pelo Conta Azul.';
+  $('nRec').innerHTML=nota;
+
+  const vR=venceu.filter(x=>x.s==='R'), vC=venceu.filter(x=>x.s==='C');
+  $('hVenc').textContent=fechado?`Carteira com vencimento em ${nomeMes}`:`Carteira de ${nomeMes} até hoje`;
+  rowsTable('tVenc',['Situação','Qtd','Valor','%'],[
+    ['<span class="pill R">Recebida</span>',vR.length,brl(sum(vR)),pct(sum(vR)/sum(venceu))],
+    ['<span class="pill C">Cartão confirmado</span>',vC.length,brl(sum(vC)),pct(sum(vC)/sum(venceu))],
+    ['<span class="pill V">Vencida</span>',vencidas.length,brl(sum(vencidas)),pct(sum(vencidas)/sum(venceu))],
+    ['<b>Já venceu</b>',`<b>${venceu.length}</b>`,`<b>${brl(sum(venceu))}</b>`,'<b>100%</b>'],
+  ].concat(aVencer.length?[['<span class="pill P">A vencer</span>',aVencer.length,brl(sum(aVencer)),'']]:[]));
+  $('nVenc').textContent=`"Cartão confirmado" (ASAAS) é pagamento aprovado aguardando repasse e não conta como inadimplência.`+(perdas.length?` Fora desta conta: ${perdas.length} cobrança(s) de ${brl(sum(perdas))} baixada(s) como perda no Conta Azul (${perdas.map(x=>x.n).join(', ')}).`:'');
+
+  const breakdown=(id,key,labels)=>{
+    const ks=Object.keys(labels).filter(k=>venceu.some(x=>x[key]===k));
+    const rows=ks.map(k=>{const all=venceu.filter(x=>x[key]===k), bad=all.filter(x=>x.s==='V');return {k,all,bad,rate:sum(bad)/sum(all)}}).sort((a,b)=>sum(b.bad)-sum(a.bad));
+    $(id).innerHTML='<thead><tr><th></th><th class="r">Venceu</th><th class="r">Em aberto</th><th class="r">Taxa</th><th style="width:22%"></th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${labels[r.k]}</td><td class="r num">${brl(sum(r.all))}<br><span class="tag">${r.all.length} cobr.</span></td><td class="r num">${brl(sum(r.bad))}<br><span class="tag">${r.bad.length} cobr.</span></td><td class="r num">${pct(r.rate)}</td><td><div class="bar"><i style="width:${(isFinite(r.rate)?r.rate*100:0).toFixed(1)}%"></i></div></td></tr>`).join('')+'</tbody>';
+  };
+  breakdown('tAcao','a',A); breakdown('tForma','f',F);
+  fechamento(rec,nomeMes);
+  const cartaoV=vencidas.filter(x=>x.f==='C');
+  $('nForma').textContent=cartaoV.length?`${cartaoV.length} parcela(s) no cartão aparecem como vencidas: normalmente é cartão recusado ou vencido, vale contato para trocar o cartão ou gerar boleto/Pix.`:'';
+}
+
+function fechamento(rec,nomeMes){
+  const ant=mesAnt(MES), tot=sum(rec);
+  const grupos=new Map(); rec.forEach(x=>{const k=x.fech||'-';const g=grupos.get(k)||[];g.push(x);grupos.set(k,g)});
+  const doAnt=grupos.get(ant)||[];
+  $('hFech').textContent=`Recebido em ${nomeMes} por mês de fechamento do contrato`;
+  $('sFech').innerHTML=`<b>Contratos fechados em ${nomeM(ant)}</b> renderam <b class="num">${brl(sum(doAnt))}</b> em ${nomeMes}, <b>${pct(sum(doAnt)/tot)}</b> do recebido no mês (${new Set(doAnt.map(x=>x.n)).size} clientes).`;
+  const ks=[...grupos.keys()].filter(k=>k!=='-').sort().reverse(); if(grupos.has('-'))ks.push('-');
+  const max=Math.max(...ks.map(k=>sum(grupos.get(k))),1);
+  $('tFech').innerHTML='<thead><tr><th>Contrato fechado em</th><th class="r">Clientes</th><th class="r">Recebido</th><th class="r">% do mês</th><th style="width:24%"></th></tr></thead><tbody>'+
+    ks.map(k=>{const g=grupos.get(k), v=sum(g), destaque=k===ant;
+      const rot=k==='-'?'Sem contrato identificado':(nomeM(k).replace(/^./,c=>c.toUpperCase())+(k===ant?' <span class="pill P">mês anterior</span>':k===MES?' <span class="tag">próprio mês</span>':''));
+      return `<tr data-f="${k}" style="cursor:pointer${destaque?';font-weight:600':''}"><td>${rot}</td><td class="r num">${new Set(g.map(x=>x.n)).size}</td><td class="r num">${brl(v)}</td><td class="r num">${pct(v/tot)}</td><td><div class="bar"><i style="width:${(v/max*100).toFixed(1)}%;background:${destaque?'var(--accent)':'var(--muted)'}"></i></div></td></tr>`}).join('')+
+    `</tbody><tfoot><tr><td><b>Total recebido</b></td><td class="r num"><b>${new Set(rec.map(x=>x.n)).size}</b></td><td class="r num"><b>${brl(tot)}</b></td><td class="r num"><b>100%</b></td><td></td></tr></tfoot>`;
+  // opções do filtro da lista
+  const todos=[...new Set(ROWS.map(x=>x.fech).filter(Boolean))].sort().reverse(), atual=$('fC').value;
+  $('fC').innerHTML='<option value="">Contrato: todos os meses</option>'+(todos.includes(ant)?`<option value="${ant}">Contrato do mês anterior (${curto(ant)})</option>`:'')+
+    todos.filter(k=>k!==ant).map(k=>`<option value="${k}">Contrato de ${curto(k)}${k===MES?' (próprio mês)':''}</option>`).join('')+'<option value="-">Sem contrato identificado</option>';
+  $('fC').value=[...$('fC').options].some(o=>o.value===atual)?atual:'';
+}
+$('tFech').addEventListener('click',e=>{const tr=e.target.closest('tr[data-f]');if(!tr)return;
+  $('fC').value=tr.dataset.f; st.set='r'; ['setV','setR','setA'].forEach((o,j)=>$(o).setAttribute('aria-pressed',j===1));
+  st.s.clear(); document.querySelectorAll('#chS .chip').forEach(b=>b.setAttribute('aria-pressed','false')); render();
+  document.getElementById('tbl').scrollIntoView({behavior:'smooth',block:'start'})});
+
+// Tabela
+function chips(id,map,set){const el=$(id);el.innerHTML=Object.entries(map).map(([k,v])=>`<button class="chip" data-k="${k}" aria-pressed="${set.has(k)}">${v}</button>`).join('');
+  el.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));render()});}
+chips('chS',S,st.s); chips('chT',T,st.t);
+function seg(ids,key,vals){ids.forEach((id,i)=>$(id).addEventListener('click',()=>{st[key]=vals[i];ids.forEach((o,j)=>$(o).setAttribute('aria-pressed',i===j));render()}))}
+seg(['setV','setR','setA'],'set',['v','r','a']); seg(['gP','gC'],'group',['p','c']);
+['q','fC','fS','fA','fF','vMin','vMax'].forEach(id=>$(id).addEventListener('input',render));
+const tira=s=>s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function filtered(){
+  const q=tira($('q').value.trim()), fa=$('fA').value, ff=$('fF').value, fs=$('fS').value, fc=$('fC').value;
+  return ROWS.filter(x=>(!fc||(fc==='-'?!x.fech:x.fech===fc))&&(st.set==='a'||x[st.set])&&(!st.s.size||st.s.has(x.s))&&(!st.t.size||st.t.has(x.t))&&(!fs||x.src===fs)&&(!fa||x.a===fa)&&(!ff||x.f===ff)&&(!q||tira(x.n).includes(q)));
+}
+function inRange(c){const mn=parseFloat($('vMin').value),mx=parseFloat($('vMax').value);return (isNaN(mn)||c>=mn*100)&&(isNaN(mx)||c<=mx*100)}
+const dias=x=>Math.round((new Date(HOJE_ISO)-new Date(x.due))/864e5);
+function render(){
+  if(!MES)return;
+  let data=filtered(); const thead=document.querySelector('#tbl thead'), tbody=document.querySelector('#tbl tbody');
+  const {k,dir}=st.sort; const cmp=(a,b)=>(a[k]<b[k]?-1:a[k]>b[k]?1:0)*dir;
+  const dup={}; ROWS.forEach(x=>{const kk=x.src+x.n+x.c+x.due+(x.parc||'');dup[kk]=(dup[kk]||0)+1});
+  if(st.group==='p'){
+    data=data.filter(x=>inRange(x.c)).sort(cmp);
+    const cols=[['n','Cliente'],['c','Valor'],['due','Vencimento'],['s','Situação'],['t','Tipo'],['fech','Contrato'],['a','Ação'],['f','Forma'],['src','Sistema']];
+    thead.innerHTML='<tr>'+cols.map(([k,l])=>`<th${k==='c'?' class="r"':''}><button data-k="${k}">${l}</button></th>`).join('')+'</tr>';
+    tbody.innerHTML=data.map(x=>`<tr><td>${esc(x.n)}${dup[x.src+x.n+x.c+x.due+(x.parc||'')]>1?' <span class="flag">· cobrança duplicada?</span>':''}</td><td class="r num">${brl(x.c)}</td><td class="num">${x.d}${x.s==='V'?`<br><span class="tag">${dias(x)} dias em atraso</span>`:''}</td><td><span class="pill ${x.s}">${S[x.s]}</span>${x.p&&x.s!=='V'?`<br><span class="tag">pago ${x.p}</span>`:''}</td><td class="tag">${T[x.t]}</td><td class="tag num">${curto(x.fech)}</td><td class="tag">${A[x.a]||x.a}</td><td class="tag">${F[x.f]||x.f}</td><td class="tag">${SRC[x.src]}${x.parc&&x.parc.includes('/')?' · '+x.parc:''}</td></tr>`).join('');
+    $('foot').innerHTML=`<span><b>${data.length}</b> cobranças</span><span>Total <b class="num">${brl(sum(data))}</b></span><span><b>${new Set(data.map(x=>x.n)).size}</b> clientes</span>`;
+  } else {
+    const m=new Map(); data.forEach(x=>{const g=m.get(x.n)||{n:x.n,c:0,qtd:0,due:x.due,a:new Set(),s:new Set(),src:new Set()};g.src.add(SRC[x.src]);g.c+=x.c;g.qtd++;if(x.due<g.due)g.due=x.due;g.a.add(A[x.a]||x.a);g.s.add(x.s);m.set(x.n,g)});
+    let g=[...m.values()].filter(x=>inRange(x.c)); const kk=['qtd','c','n','due'].includes(k)?k:'c';
+    g.sort((a,b)=>(a[kk]<b[kk]?-1:a[kk]>b[kk]?1:0)*(k===kk?dir:-1));
+    const cols=[['n','Cliente'],['qtd','Cobranças'],['c','Valor somado'],['due','Vencimento mais antigo'],['a','Ação'],['s','Situações'],['src','Sistema']];
+    thead.innerHTML='<tr>'+cols.map(([k,l])=>`<th${k==='c'||k==='qtd'?' class="r"':''}><button data-k="${k}">${l}</button></th>`).join('')+'</tr>';
+    tbody.innerHTML=g.map(x=>`<tr><td>${esc(x.n)}</td><td class="r num">${x.qtd}</td><td class="r num">${brl(x.c)}</td><td class="num">${dt(x.due)}</td><td class="tag">${[...x.a].join(', ')}</td><td>${[...x.s].map(s=>`<span class="pill ${s}">${S[s]}</span>`).join(' ')}</td><td class="tag">${[...x.src].join(', ')}</td></tr>`).join('');
+    $('foot').innerHTML=`<span><b>${g.length}</b> clientes</span><span>Total <b class="num">${brl(g.reduce((s,x)=>s+x.c,0))}</b></span>`;
+  }
+}
+document.querySelector('#tbl thead').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;st.sort=st.sort.k===k?{k,dir:-st.sort.dir}:{k,dir:k==='c'||k==='qtd'?-1:1};render()});
+
+function totaisMes(m){
+  const R=parse(DOCS[m]), rec=R.filter(x=>x.r), venceu=R.filter(x=>x.v&&x.s!=='L'&&x.s!=='P'), vencidas=venceu.filter(x=>x.s==='V');
+  const s=(a,src)=>sum(src?a.filter(x=>x.src===src):a);
+  return {m,rec:s(rec),as:s(rec,'AS'),ca:s(rec,'CA'),ent:sum(rec.filter(x=>x.t==='E')),ant:sum(rec.filter(x=>x.fech===mesAnt(m))),painel:Math.round((DOCS[m].painel_entradas||0)*100),
+    venceu:s(venceu),aberto:s(vencidas),avisos:(DOCS[m].avisos||[]).length};
+}
+function anual(ano){
+  const ms=Object.keys(DOCS).filter(m=>m.startsWith(ano)).sort(), T=ms.map(totaisMes);
+  const tot=k=>T.reduce((s,x)=>s+x[k],0);
+  $('titulo').textContent=`Entradas e inadimplência de ${ano}`;
+  const at=ms.map(m=>DOCS[m].atualizado_em||'').sort().pop()||''; $('atualizado').textContent=at?`Atualizado em ${dt(at.slice(0,10))} às ${at.slice(11,16)}`:'';
+  const av=ms.filter(m=>(DOCS[m].avisos||[]).length); $('avisos').hidden=!av.length;
+  $('avisos').textContent=av.length?'Meses com aviso: '+av.map(m=>NOMES_MES[+m.slice(5)-1]+': '+DOCS[m].avisos.join(' ')).join(' · '):'';
+  const ult=T[T.length-1]||{}, n=T.length, nomeUlt=ult.m?NOMES_MES[+ult.m.slice(5)-1]:'';
+  $('kpisAno').innerHTML=[
+    ['good',`Recebido em ${ano}`,brl(tot('rec')),`${NOMES_MES[+ms[0].slice(5)-1]} a ${nomeUlt} · ASAAS ${brl(tot('as'))} · Conta Azul ${brl(tot('ca'))}`],
+    ['','Média mensal recebida',brl(n>1?Math.round((tot('rec')-ult.rec)/(n-1)):tot('rec')),n>1?`média dos ${n-1} meses fechados (sem ${nomeUlt}, ainda em curso)`:''],
+    ['','Entradas de contratos novos',brl(tot('ent')),`combinado no Painel Comercial: ${brl(tot('painel'))}`],
+    ['bad','Inadimplência acumulada',brl(tot('aberto')),`${pct(tot('aberto')/tot('venceu'))} de ${brl(tot('venceu'))} que venceu no ano e segue em aberto hoje`],
+  ].map(([c,l,v,d])=>`<div class="kpi ${c}"><div class="eyebrow">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('');
+  const max=Math.max(...T.map(x=>x.rec),1);
+  const cel=(v,b)=>`<td class="r num">${b?'<b>':''}${v}${b?'</b>':''}</td>`;
+  $('tAno').innerHTML='<thead><tr><th>Mês</th><th class="r">Recebido</th><th style="width:18%"></th><th class="r">ASAAS</th><th class="r">Conta Azul</th><th class="r">Entradas</th><th class="r">Combinado</th><th class="r">Contratos do mês anterior</th><th class="r">Venceu</th><th class="r">Em aberto</th><th class="r">Taxa</th></tr></thead><tbody>'+
+    T.map(x=>`<tr data-m="${x.m}"><td>${NOMES_MES[+x.m.slice(5)-1].replace(/^./,c=>c.toUpperCase())}${x.avisos?' <span class="flag">· aviso</span>':''}${HOJE_ISO.slice(0,7)===x.m?' <span class="tag">em curso</span>':''}</td>${cel(brl(x.rec))}<td><div class="stack"><i class="as" style="width:${(x.as/max*100).toFixed(1)}%"></i><i class="ca" style="width:${(x.ca/max*100).toFixed(1)}%"></i></div></td>${cel(brl(x.as))}${cel(brl(x.ca))}${cel(brl(x.ent))}${cel(brl(x.painel))}<td class="r num">${brl(x.ant)}<br><span class="tag">${pct(x.ant/x.rec)} do mês</span></td>${cel(brl(x.venceu))}${cel(brl(x.aberto))}${cel(pct(x.aberto/x.venceu))}</tr>`).join('')+
+    `</tbody><tfoot><tr><td>Total</td>${cel(brl(tot('rec')))}<td></td>${cel(brl(tot('as')))}${cel(brl(tot('ca')))}${cel(brl(tot('ent')))}${cel(brl(tot('painel')))}<td class="r num"><b>${brl(tot('ant'))}</b><br><span class="tag">${pct(tot('ant')/tot('rec'))} do ano</span></td>${cel(brl(tot('venceu')))}${cel(brl(tot('aberto')))}${cel(pct(tot('aberto')/tot('venceu')))}</tr></tfoot>`;
+  $('nAno').innerHTML='"Em aberto" de cada mês é o que venceu naquele mês e continua sem pagamento hoje; quando um atrasado é pago, ele sai daqui. A rotina diária atualiza o mês atual e o anterior; os meses mais antigos guardam a foto da última coleta. No mês em curso, "Venceu" conta só o que já venceu até hoje. O Conta Azul só passou a ter cobranças próprias de clientes a partir de jun/2026; antes disso traz Pix avulsos de clientes e de parceiro. Transferências, estornos e rendimentos de aplicação lançados no Conta Azul ficam de fora. "Contratos do mês anterior" é quanto do recebido no mês veio de clientes que fecharam contrato no mês anterior (ex.: em agosto, os contratos de julho).';
+}
+$('tAno').addEventListener('click',e=>{const tr=e.target.closest('tr[data-m]');if(tr)escolher(tr.dataset.m)});
+function escolher(mes){
+  SEL=mes;
+  try{localStorage.setItem('painelFinanceiroMes',mes)}catch(e){}
+  [...$('meses').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===mes));
+  $('vazio').hidden=true;
+  if(mes.startsWith('ANO-')){MES=null; $('conteudo').hidden=true; $('anual').hidden=false; anual(mes.slice(4)); return}
+  MES=mes; ROWS=parse(DOCS[mes]);
+  $('anual').hidden=true; $('conteudo').hidden=false; resumo(); render();
+}
+function montarMeses(){
+  const ms=Object.keys(DOCS).sort(), anos=[...new Set(ms.map(m=>m.slice(0,4)))];
+  $('meses').innerHTML=anos.map(a=>`<button data-m="ANO-${a}" aria-pressed="false">Ano ${a}</button>`).join('')+ms.map(m=>`<button data-m="${m}" aria-pressed="false">${NOMES_MES[+m.slice(5)-1].replace(/^./,c=>c.toUpperCase())}/${m.slice(0,4)}</button>`).join('');
+  if(!ms.length)return;
+  let pref=null; try{pref=localStorage.getItem('painelFinanceiroMes')}catch(e){}
+  const ok=m=>m&&(DOCS[m]||(m.startsWith('ANO-')&&anos.includes(m.slice(4))));
+  escolher(ok(SEL)?SEL:(ok(pref)?pref:ms[ms.length-1]));
+}
+$('meses').addEventListener('click',e=>{const b=e.target.closest('button');if(b)escolher(b.dataset.m)});
+
+(async()=>{
+  const db=await window.claude?.use?.('db');
+  if(!db){$('vazio').querySelector('h2').textContent='Não foi possível abrir os dados';$('vazio').querySelector('p').textContent='Esta visualização não tem acesso ao banco da página. Abra pelo claude.ai com a sua conta.';return}
+  db.collection('meses').onSnapshot(snap=>{
+    DOCS={}; snap.docs.forEach(d=>{const v=d.data(); if(v&&v.mes) DOCS[v.mes]=v});
+    if(!Object.keys(DOCS).length){$('vazio').querySelector('h2').textContent='Nenhum mês gravado ainda';return}
+    montarMeses();
+  },err=>{$('vazio').querySelector('h2').textContent='Não foi possível ler os dados ('+(err&&err.code||'erro')+')'});
+})();
+</script>

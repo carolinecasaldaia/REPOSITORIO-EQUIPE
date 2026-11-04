@@ -1,0 +1,19 @@
+title = "Automações — Caroline Macedo Advocacia"
+
+# Usa todas as regras padrão do gitleaks (chaves de API, tokens, senhas, chaves privadas)
+[extend]
+useDefault = true
+
+# Regra extra: chave de API do ASAAS
+[[rules]]
+id = "asaas-api-key"
+description = "Chave de API do ASAAS"
+regex = '''\$aact_[A-Za-z0-9_]{20,}'''
+keywords = ["$aact_"]
+
+[allowlist]
+description = "Arquivos de exemplo sem credenciais reais"
+paths = [
+  '''(^|/)\.env\.(example|exemplo)$''',
+  '''(^|/)uv\.lock$''',
+]

@@ -1,0 +1,12 @@
+# Clientes liberados da trava de documentação, por decisão dela.
+#
+# O cliente listado aqui é cadastrado e tem o caso aberto mesmo faltando
+# documento na pasta. Use quando o prazo não pode esperar — defesa em busca e
+# apreensão, por exemplo. O que falta continua registrado na ficha e no
+# relatório de pendências: liberar não é dizer que está completo.
+#
+# Formato:  NOME DO CLIENTE (ou da pasta) = motivo
+# Acentos e maiúsculas não importam. Linhas com # são ignoradas.
+#
+# Para voltar a travar, apague a linha.
+

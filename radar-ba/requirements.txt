@@ -1,0 +1,10 @@
+# Dependências do RADAR B&A.
+# O atalho "RADAR B&A.command" instala tudo sozinho na primeira vez,
+# num ambiente isolado em ~/.radar-ba/venv — não mexe no Python do sistema.
+
+cryptography>=42.0   # criptografia AES-256-GCM do CPF guardado
+openpyxl>=3.1        # leitura da carteira em .xlsx
+pytest>=8.0          # testes
+
+# As consultas ao DJEN, ao DataJud e ao e-SAJ usam só a biblioteca padrão
+# (urllib) — de propósito, para reduzir dependências.

@@ -1,0 +1,15 @@
+# Quem recebe as tarefas de cada tipo de caso aberto pela automação.
+#
+# Para trocar alguém, mude só o nome depois do "=" e salve. Vale a partir do
+# próximo caso aberto; as tarefas que já existem no Astrea não mudam.
+# O nome precisa estar escrito como aparece no Astrea.
+# Linhas começando com # são ignoradas.
+#
+# 22/09/2026 — Pablo Cabral saiu; as tarefas dele passam para Emerson Medeiros.
+
+REVISIONAL VEICULAR = Emerson Medeiros
+REVISIONAL EMPRÉSTIMO = Emerson Medeiros
+REVISIONAL CARTÃO DE CRÉDITO = Emerson Medeiros
+BUSCA E APREENSÃO = Ana Carolina
+CÍVEL = Samantha
+NEGOCIAR EXTRAJUDICIAL = Luysa

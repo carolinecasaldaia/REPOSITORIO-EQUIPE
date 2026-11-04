@@ -1,0 +1,370 @@
+<title>Envios de Relatórios — Caroline Macedo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabeçalho com placar do mês → faixa dos 20 dias úteis → lista do dia, uma linha por cliente */
+:root {
+  --bg: #f7f6f4;
+  --surface: #ffffff;
+  --surface-2: #f1eeea;
+  --ink: #241a14;
+  --muted: #6e625a;
+  --line: #e2dcd5;
+  --brand: #6c3813;
+  --brand-soft: #f3e6dc;
+  --ok: #2f6b4f;
+  --ok-soft: #e3f0e8;
+  --warn: #9a5a00;
+  --warn-soft: #fbeedb;
+  --bad: #a3322a;
+  --bad-soft: #f8e3e0;
+  --focus: #b3672d;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17120f; --surface: #211a16; --surface-2: #2a221d; --ink: #f1e9e2; --muted: #b3a69b;
+    --line: #3a302a; --brand: #d9925c; --brand-soft: #3a2619; --ok: #7cc49d; --ok-soft: #1f3329;
+    --warn: #e2a24f; --warn-soft: #3a2a14; --bad: #f08a80; --bad-soft: #3c1f1c; --focus: #e0a271;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17120f; --surface: #211a16; --surface-2: #2a221d; --ink: #f1e9e2; --muted: #b3a69b;
+  --line: #3a302a; --brand: #d9925c; --brand-soft: #3a2619; --ok: #7cc49d; --ok-soft: #1f3329;
+  --warn: #e2a24f; --warn-soft: #3a2a14; --bad: #f08a80; --bad-soft: #3c1f1c; --focus: #e0a271;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.6rem, 3.2vw, 2.2rem); letter-spacing: -0.01em; }
+.eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brand); }
+.muted { color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+header { display: grid; gap: 14px; }
+.head-top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.placar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; min-width: 0; }
+.tile b { font-family: var(--mono); font-size: 1.5rem; font-weight: 500; }
+.tile span { font-size: 0.8rem; color: var(--muted); }
+.barra { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin-top: 6px; }
+.barra i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .4s ease; }
+.aviso { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; }
+
+.dias { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; }
+.dia { flex: 0 0 auto; scroll-snap-align: start; min-width: 92px; text-align: left; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px; cursor: pointer; display: grid; gap: 1px; }
+.dia small { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.dia strong { font-family: var(--mono); font-weight: 500; font-size: 0.95rem; }
+.dia .prog { font-size: 0.74rem; color: var(--muted); }
+.dia.hoje { border-color: var(--brand); }
+.dia.hoje small::after { content: " · hoje"; color: var(--brand); font-weight: 700; }
+.dia[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.dia[aria-pressed="true"] small, .dia[aria-pressed="true"] .prog { color: rgba(255,255,255,.85); }
+.dia.completo .prog::before { content: "✓ "; }
+
+.ferramentas { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.busca { flex: 1 1 220px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 0.85rem; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.titulo-dia { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.lista { display: grid; gap: 10px; }
+.cliente { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.cliente.feito { background: var(--ok-soft); border-color: transparent; }
+.linha1 { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; }
+.check { width: 26px; height: 26px; margin-top: 2px; accent-color: var(--ok); cursor: pointer; }
+.nome { font-weight: 600; font-size: 1.02rem; min-width: 0; }
+.selos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.selo { font-size: 0.72rem; font-weight: 600; border-radius: 6px; padding: 2px 8px; background: var(--surface-2); color: var(--muted); }
+.selo.venc { background: var(--brand-soft); color: var(--brand); }
+.selo.nov { background: var(--ok-soft); color: var(--ok); }
+.selo.conf { background: var(--warn-soft); color: var(--warn); }
+.selo.atraso { background: var(--bad-soft); color: var(--bad); }
+.acoes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; cursor: pointer; text-decoration: none; color: var(--ink); white-space: nowrap; }
+.btn.prim { background: var(--brand); color: #fff; border-color: var(--brand); }
+.btn[disabled] { opacity: .5; cursor: default; }
+.meta { font-size: 0.8rem; color: var(--muted); }
+.meta.ok { color: var(--ok); font-weight: 600; }
+details { border-top: 1px dashed var(--line); padding-top: 8px; }
+summary { cursor: pointer; font-size: 0.85rem; color: var(--muted); }
+.corpo { display: grid; gap: 8px; margin-top: 8px; min-width: 0; }
+.corpo ul { margin: 0; padding-left: 18px; }
+.corpo li { margin: 2px 0; }
+.bloco-conf { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 0.86rem; }
+.bloco-fin { font-size: 0.86rem; }
+.bloco-fin.atraso { color: var(--bad); font-weight: 600; }
+.nota { display: grid; gap: 6px; }
+.nota label { font-size: 0.78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.nota textarea { width: 100%; min-height: 60px; resize: vertical; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.nota-pe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.tel { font-family: var(--mono); font-size: 0.85rem; }
+.vazio { text-align: center; padding: 40px 16px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; }
+@media (max-width: 640px) {
+  .linha1 { grid-template-columns: auto 1fr; }
+  .acoes { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .barra i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="head-top">
+      <div>
+        <div class="eyebrow">Caroline Macedo Advocacia · Controladoria</div>
+        <h1 id="titulo">Envios de Relatórios</h1>
+        <div class="muted" id="sub">Carregando os relatórios do mês…</div>
+      </div>
+      <div class="meta" id="quem"></div>
+    </div>
+    <div class="placar" id="placar"></div>
+    <div class="aviso" id="aviso" hidden></div>
+  </header>
+
+  <nav class="dias" id="dias" aria-label="Dias de envio"></nav>
+
+  <div class="ferramentas">
+    <input class="busca" id="busca" type="search" placeholder="Buscar cliente…" aria-label="Buscar cliente">
+    <button class="chip" id="f-pend" aria-pressed="false">Só pendentes</button>
+    <button class="chip" id="f-conf" aria-pressed="false">Com item para conferir</button>
+    <button class="chip" id="f-atraso" aria-pressed="false">Em atraso</button>
+    <button class="chip" id="f-nov" aria-pressed="false">Com novidade</button>
+    <button class="chip" id="f-verif" aria-pressed="false">Financeiro a verificar</button>
+  </div>
+
+  <section>
+    <div class="titulo-dia"><h2 id="titulo-dia">—</h2><span class="meta" id="conta-dia"></span></div>
+    <div class="lista" id="lista" style="margin-top:12px">
+      <div class="vazio">Os relatórios do mês aparecem aqui, separados pelo dia de envio.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const S = { dados: null, envios: {}, dia: null, filtros: { pend: false, conf: false, atraso: false, nov: false, verif: false },
+              busca: "", db: null, user: null, eu: null, podeEscrever: true, downloads: null, perfis: {} };
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const hojeISO = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const quando = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " às " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); };
+  const docId = (c) => S.dados.mes + "_" + c.id;
+  const estado = (c) => S.envios[docId(c)] || {};
+
+  function lembrarDia(n) { try { localStorage.setItem("painel-dia-" + S.dados.mes, String(n)); } catch (e) {} }
+  function diaLembrado() { try { return Number(localStorage.getItem("painel-dia-" + S.dados.mes)) || null; } catch (e) { return null; } }
+
+  function escolherDiaInicial() {
+    const hoje = hojeISO();
+    const dias = S.dados.dias;
+    const lembrado = diaLembrado();
+    if (lembrado && dias.some((d) => d.n === lembrado)) return lembrado;
+    const ex = dias.find((d) => d.data === hoje);
+    if (ex) return ex.n;
+    const prox = dias.find((d) => d.data > hoje);
+    return prox ? prox.n : dias[dias.length - 1].n;
+  }
+
+  function renderPlacar() {
+    const cs = S.dados.clientes;
+    const env = cs.filter((c) => estado(c).enviado).length;
+    const conf = cs.filter((c) => c.conferir.length && !estado(c).enviado).length;
+    const atr = cs.filter((c) => c.atraso).length;
+    const hoje = S.dados.dias.find((d) => d.data === hojeISO());
+    const doDia = hoje ? cs.filter((c) => c.dia === hoje.n) : [];
+    const pendHoje = doDia.filter((c) => !estado(c).enviado).length;
+    const pct = cs.length ? Math.round(100 * env / cs.length) : 0;
+    $("placar").innerHTML =
+      '<div class="tile"><span>Enviados no mês</span><b>' + env + '<span class="muted" style="font-size:.9rem"> / ' + cs.length + '</span></b>' +
+      '<div class="barra" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div></div>' +
+      '<div class="tile"><span>' + (hoje ? "Pendentes hoje (" + esc(hoje.rotulo) + ")" : "Hoje não é dia de envio") + '</span><b>' + (hoje ? pendHoje : "—") + '</b></div>' +
+      '<div class="tile"><span>A conferir antes de enviar</span><b>' + conf + '</b></div>' +
+      '<div class="tile"><span>Em atraso com o escritório</span><b>' + atr + '</b></div>' +
+      '<div class="tile"><span>Financeiro a verificar</span><b>' + cs.filter((c) => c.verificar).length + '</b></div>';
+  }
+
+  function renderDias() {
+    const hoje = hojeISO();
+    $("dias").innerHTML = S.dados.dias.map((d) => {
+      const doDia = S.dados.clientes.filter((c) => c.dia === d.n);
+      const env = doDia.filter((c) => estado(c).enviado).length;
+      const cls = ["dia", d.data === hoje ? "hoje" : "", env === doDia.length && doDia.length ? "completo" : ""].join(" ");
+      return '<button class="' + cls + '" data-dia="' + d.n + '" aria-pressed="' + (d.n === S.dia) + '">' +
+        "<small>Dia " + String(d.n).padStart(2, "0") + "</small><strong>" + esc(d.rotulo) + " " + esc(d.semana) + "</strong>" +
+        '<span class="prog num">' + env + "/" + doDia.length + " enviados</span></button>";
+    }).join("");
+    const atual = $("dias").querySelector('[aria-pressed="true"]');
+    if (atual && atual.scrollIntoView) atual.scrollIntoView({ block: "nearest", inline: "center" });
+  }
+
+  function filtrados() {
+    const q = S.busca.trim().toLowerCase();
+    return S.dados.clientes.filter((c) => {
+      if (q) { if (!c.nome.toLowerCase().includes(q)) return false; } else if (c.dia !== S.dia) return false;
+      const st = estado(c);
+      if (S.filtros.pend && st.enviado) return false;
+      if (S.filtros.conf && !c.conferir.length) return false;
+      if (S.filtros.atraso && !c.atraso) return false;
+      if (S.filtros.nov && !c.novidade) return false;
+      if (S.filtros.verif && !c.verificar) return false;
+      return true;
+    });
+  }
+
+  function nomeDe(id) { const p = S.perfis[id]; return (p && p.name) || (id && S.eu && id === S.eu ? "você" : "alguém da equipe"); }
+
+  function cartao(c) {
+    const st = estado(c);
+    const dia = S.dados.dias.find((d) => d.n === c.dia);
+    const selos = [
+      c.vencimento ? '<span class="selo venc">Parcela vence ' + esc(c.vencimento) + "</span>" : "",
+      c.novidade ? '<span class="selo nov">Novidade no mês</span>' : '<span class="selo">Sem movimentação</span>',
+      c.conferir.length ? '<span class="selo conf">Conferir (' + c.conferir.length + ")</span>" : "",
+      c.atraso ? '<span class="selo atraso">Em atraso</span>' : "",
+      c.verificar ? '<span class="selo conf">Financeiro a verificar</span>' : "",
+      S.busca ? '<span class="selo">Dia ' + String(c.dia).padStart(2, "0") + " · " + esc(dia ? dia.rotulo : "") + "</span>" : "",
+    ].join("");
+    const acoes = [
+      c.pdf ? '<a class="btn" href="' + esc(c.pdf) + '" target="_blank" rel="noopener">Abrir PDF</a>' : "",
+      c.pdf && S.downloads ? '<button class="btn" data-baixar="' + c.id + '">Baixar PDF</button>' : "",
+      c.whatsapp ? '<a class="btn prim" href="' + esc(c.whatsapp) + '" target="_blank" rel="noopener">WhatsApp</a>' : "",
+    ].join("");
+    const enviadoMeta = st.enviado
+      ? '<div class="meta ok">Enviado por ' + esc(nomeDe(st.enviado_por)) + " em " + esc(quando(st.enviado_em)) + "</div>"
+      : '<div class="meta">Ainda não enviado</div>';
+    const notaMeta = st.nota_em ? "Anotado por " + esc(nomeDe(st.nota_por)) + " em " + esc(quando(st.nota_em)) : "";
+    return '<article class="cliente' + (st.enviado ? " feito" : "") + '" data-id="' + c.id + '">' +
+      '<div class="linha1">' +
+        '<input class="check" type="checkbox" id="chk-' + c.id + '" data-check="' + c.id + '" ' + (st.enviado ? "checked" : "") +
+          (S.podeEscrever && S.db ? "" : " disabled") + ' aria-label="Marcar relatório de ' + esc(c.nome) + ' como enviado">' +
+        '<div style="min-width:0"><label class="nome" for="chk-' + c.id + '">' + esc(c.nome) + "</label>" +
+          '<div class="selos">' + selos + "</div>" + enviadoMeta + "</div>" +
+        '<div class="acoes">' + acoes + "</div>" +
+      "</div>" +
+      (c.telefone ? '<div class="meta">Telefone: <span class="tel">' + esc(c.telefone) + '</span> <button class="btn" data-copiar="' + esc(c.telefone) + '">Copiar</button></div>'
+                  : '<div class="meta">Sem telefone em CONTATOS DOS CLIENTES — preencher lá.</div>') +
+      "<details" + (c.conferir.length ? " open" : "") + "><summary>Resumo do mês, itens a conferir e financeiro</summary><div class=\"corpo\">" +
+        (c.conferir.length ? '<div class="bloco-conf"><strong>Conferir antes de enviar:</strong><ul>' + c.conferir.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul></div>" : "") +
+        (c.resumo.length ? "<ul>" + c.resumo.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : '<div class="muted">Sem movimentação no mês.</div>') +
+        '<div class="meta">Processos: <span class="num">' + c.processos.map(esc).join(" · ") + "</span></div>" +
+        '<div class="bloco-fin' + (c.atraso || c.verificar ? " atraso" : "") + '">Financeiro (interno): ' + esc(c.financeiro) + "</div>" +
+      "</div></details>" +
+      '<div class="nota"><label for="nota-' + c.id + '">Anotação da equipe</label>' +
+        '<textarea id="nota-' + c.id + '" data-nota="' + c.id + '" placeholder="Ex.: cliente pediu para enviar à tarde; conferir sentença com a Dra. Caroline…"' +
+          (S.podeEscrever && S.db ? "" : " disabled") + ">" + esc(st.nota || "") + "</textarea>" +
+        '<div class="nota-pe"><span class="meta" id="nota-meta-' + c.id + '">' + notaMeta + "</span>" +
+          '<button class="btn" data-salvar="' + c.id + '"' + (S.podeEscrever && S.db ? "" : " disabled") + ">Salvar anotação</button></div></div>" +
+      "</article>";
+  }
+
+  async function renderLista() {
+    const d = S.dados.dias.find((x) => x.n === S.dia);
+    const lista = filtrados();
+    $("titulo-dia").textContent = S.busca ? "Resultado da busca" : d ? "Dia " + String(d.n).padStart(2, "0") + " · " + d.rotulo + " (" + d.semana + ")" : "—";
+    const env = lista.filter((c) => estado(c).enviado).length;
+    $("conta-dia").textContent = lista.length + " relatório" + (lista.length === 1 ? "" : "s") + " · " + env + " enviado" + (env === 1 ? "" : "s");
+    const ids = new Set();
+    lista.forEach((c) => { const st = estado(c); if (st.enviado_por) ids.add(st.enviado_por); if (st.nota_por) ids.add(st.nota_por); });
+    if (S.user && ids.size) { try { S.perfis = await S.user.profiles([...ids]); } catch (e) {} }
+    // não sobrescreve uma anotação que alguém está digitando
+    const foco = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.nota;
+    const rascunho = foco ? document.activeElement.value : null;
+    $("lista").innerHTML = lista.length ? lista.map(cartao).join("") : '<div class="vazio">Nenhum relatório com esses filtros.</div>';
+    if (foco) { const t = document.querySelector('[data-nota="' + foco + '"]'); if (t) { t.value = rascunho; t.focus(); } }
+  }
+
+  function renderTudo() { renderPlacar(); renderDias(); renderLista(); }
+
+  async function gravar(c, mudanca) {
+    if (!S.db) return;
+    const ref = S.db.doc("envios/" + docId(c));
+    const atual = Object.assign({ mes: S.dados.mes, cliente: c.id }, estado(c), mudanca);
+    S.envios[docId(c)] = atual;           // mostra na hora; o snapshot confirma
+    renderTudo();
+    try { await ref.set(atual); }
+    catch (e) {
+      if (e && e.code === "invalid_argument") { S.podeEscrever = false; mostrarAviso("Seu acesso a este painel é só de leitura. Peça à Dra. Caroline acesso de Colaborador para marcar envios."); }
+      else mostrarAviso("Não consegui salvar agora (" + (e && e.code || "erro") + "). Tente de novo em instantes.");
+    }
+  }
+
+  function mostrarAviso(t) { $("aviso").textContent = t; $("aviso").hidden = false; }
+
+  document.addEventListener("click", async (ev) => {
+    const el = ev.target.closest("[data-dia],[data-baixar],[data-copiar],[data-salvar],.chip");
+    if (!el) return;
+    if (el.dataset.dia) { S.dia = Number(el.dataset.dia); S.busca = ""; $("busca").value = ""; lembrarDia(S.dia); renderTudo(); return; }
+    if (el.classList.contains("chip")) {
+      const k = el.id.replace("f-", ""); S.filtros[k] = !S.filtros[k]; el.setAttribute("aria-pressed", String(S.filtros[k])); renderLista(); return;
+    }
+    if (el.dataset.copiar) {
+      try { await navigator.clipboard.writeText(el.dataset.copiar); el.textContent = "Copiado"; }
+      catch (e) { const t = el.previousElementSibling; if (t) { const r = document.createRange(); r.selectNodeContents(t); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } }
+      setTimeout(() => (el.textContent = "Copiar"), 1500); return;
+    }
+    if (el.dataset.baixar) {
+      const c = S.dados.clientes.find((x) => x.id === el.dataset.baixar);
+      el.disabled = true; el.textContent = "Preparando…";
+      try { const blob = await (await fetch(c.pdf)).blob(); await S.downloads.save({ filename: c.pdf_nome, data: blob }); }
+      catch (e) { if (!(e && e.code === "declined")) mostrarAviso("Não foi possível baixar o PDF agora. Use “Abrir PDF”."); }
+      el.disabled = false; el.textContent = "Baixar PDF"; return;
+    }
+    if (el.dataset.salvar) {
+      const c = S.dados.clientes.find((x) => x.id === el.dataset.salvar);
+      const texto = document.querySelector('[data-nota="' + c.id + '"]').value.trim();
+      if (texto === (estado(c).nota || "")) return;
+      el.disabled = true;
+      await gravar(c, { nota: texto, nota_por: S.eu, nota_em: new Date().toISOString() });
+      el.disabled = false;
+    }
+  });
+
+  document.addEventListener("change", (ev) => {
+    const id = ev.target.dataset && ev.target.dataset.check;
+    if (!id) return;
+    const c = S.dados.clientes.find((x) => x.id === id);
+    const marcado = ev.target.checked;
+    gravar(c, marcado ? { enviado: true, enviado_por: S.eu, enviado_em: new Date().toISOString() }
+                      : { enviado: false, enviado_por: null, enviado_em: null });
+  });
+
+  $("busca").addEventListener("input", (ev) => { S.busca = ev.target.value; renderLista(); });
+
+  async function iniciar() {
+    try { S.dados = await (await fetch("dados.json", { cache: "no-store" })).json(); }
+    catch (e) { $("sub").textContent = "Não encontrei os dados do mês (dados.json)."; return; }
+    $("titulo").textContent = "Envios de Relatórios · " + S.dados.rotulo.charAt(0).toUpperCase() + S.dados.rotulo.slice(1);
+    $("sub").textContent = S.dados.clientes.length + " relatórios em " + S.dados.dias.length + " dias úteis · dados de " + S.dados.gerado_em;
+    S.dia = escolherDiaInicial();
+    renderTudo();
+
+    const claude = window.claude;
+    if (!claude || !claude.use) { mostrarAviso("Abra este painel pelo claude.ai para marcar envios e salvar anotações."); return; }
+    const [db, user, downloads] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("downloads")]);
+    S.db = db; S.user = user; S.downloads = downloads;
+    if (user) {
+      const me = await user.me(); S.eu = me.id;
+      $("quem").textContent = me.name ? "Você: " + me.name : "";
+      const pode = await user.can("data.write"); if (pode === false) S.podeEscrever = false;
+    }
+    if (!db) { mostrarAviso("O registro de envios não está disponível nesta visualização. Os relatórios podem ser consultados, mas os checks e as anotações não serão salvos."); renderTudo(); return; }
+    if (!S.podeEscrever) mostrarAviso("Seu acesso a este painel é só de leitura.");
+    db.collection("envios").where("mes", "==", S.dados.mes).onSnapshot((snap) => {
+      const novo = {};
+      snap.docs.forEach((d) => { if (d.exists) novo[d.id] = d.data(); });
+      S.envios = novo;
+      renderTudo();
+    }, (e) => mostrarAviso("O registro de envios parou de atualizar (" + e.code + "). Recarregue a página."));
+  }
+  iniciar();
+})();
+</script>

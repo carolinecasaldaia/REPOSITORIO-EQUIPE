@@ -1,0 +1,12 @@
+# Texto com final de linha padronizado (LF)
+* text=auto eol=lf
+
+# Arquivos binários: nunca mesclar nem converter
+*.docx binary
+*.xlsx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.zip binary

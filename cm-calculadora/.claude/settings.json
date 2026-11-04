@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/CM-Calculos-Dados/casos/*/documentos/**)",
+      "Read(~/CM-Calculos-Dados/casos/*/extracao/**)",
+      "Read(~/CM-Calculos-Dados/casos/*/resultados/**)",
+      "Read(~/CM-Calculos-Dados/casos/*/manifesto.json)",
+      "Edit(~/CM-Calculos-Dados/**)",
+      "Write(~/CM-Calculos-Dados/**)",
+      "Read(~/CM-Calculos-Dados/validacao/*/original/**)",
+      "Read(~/CM-Calculos-Dados/validacao/*/anonimizados/**)",
+      "Read(~/CM-Calculos-Dados/validacao/*/anonimizacao/relatorio-detalhado-*)",
+      "Read(~/CM-Calculos-Dados/validacao/*/anonimizacao/termos.txt)"
+    ],
+    "ask": [
+      "Bash(uv run cm-calc:*)",
+      "Bash(cm-calc:*)"
+    ]
+  }
+}
