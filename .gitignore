@@ -1,0 +1,75 @@
+# Credenciais — jamais versionar
+.env
+*.env
+.env.*
+!.env.example
+!.env.exemplo
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa*
+id_ed25519*
+credentials*.json
+client_secret*.json
+service-account*.json
+token*.json
+*.token
+secrets.toml
+.streamlit/secrets.toml
+.netrc
+.npmrc
+.pypirc
+
+# Dados pessoais de clientes e operação (ficam só no Drive)
+dados/
+RELATÓRIOS/
+RELATORIOS/
+evidencias/
+*.xlsx
+*.xls
+*.sqlite3*
+*.log
+*.jsonl
+*BACKUP*
+apelidos.json
+ajustes*.json
+painel-comercial-dados.json
+onboarding/cadastro-astrea/DOCUMENTAÇÃO - LIBERAÇÕES.txt
+onboarding/cadastro-astrea/MATÉRIA NOVA - AUTORIZAÇÕES.txt
+onboarding/cadastro-astrea/PAGAMENTO EM OUTRO CADASTRO DO ASAAS.txt
+onboarding/cadastro-astrea/TIPO DE AÇÃO - CORREÇÕES.txt
+CM-Calculos-Dados/
+casos/
+SAIDA/*
+!SAIDA/.gitkeep
+*.pdf
+*.zip
+*.csv
+*.db
+*.sqlite
+
+# Ambiente e lixo do sistema
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/
+.coverage
+.DS_Store
+.claude/settings.local.json
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+build/
+dist/
+*.egg-info/
+node_modules/
+.idea/
+.vscode/
+*.swp
+~$*
+Thumbs.db

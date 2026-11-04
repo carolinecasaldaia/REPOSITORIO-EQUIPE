@@ -1,0 +1,32 @@
+# Verificação de vazamento de credenciais (leve: ~1 min por execução)
+name: Segurança
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seguranca-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            | tar xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Procurar credenciais no histórico
+        run: gitleaks git . --config .gitleaks.toml --redact --no-banner -v
