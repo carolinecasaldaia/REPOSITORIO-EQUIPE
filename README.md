@@ -20,6 +20,7 @@ nenhum dado de cliente entra aqui (veja `.gitignore`).
 | `gerador-peticao-revisional` | Gera a petição revisional | `A - REVISIONAL/A - DOCUMENTOS/GERADOR PETIÇÃO REVISIONAL` |
 | `radar-ba` | Radar B&A (monitoramento nos tribunais) | `MAPEAMENTO TJS/radar-ba` |
 | `cm-calculadora` | Calculadora CM / anonimização de pareceres | `~/cm-calculadora` (fora do Drive) |
+| `meta-ads` | Gerencia campanhas do Facebook/Instagram (Marketing API) | — (token em `~/.meta-ads/.env`) |
 | `atalhos-desktop` | Atalhos da Área de Trabalho que abrem cada automação | `~/Desktop/CLAUDE` |
 
 As listas de clientes do Cadastro Astrea estão aqui só como modelo
