@@ -5,15 +5,15 @@
 /* Layout: livro-razão do comercial — seletor de período, números do período, evolução mês a mês, projeção de caixa, distribuições, leituras, tabela */
 :root{
   --bg:#f5f6f4; --surface:#ffffff; --ink:#1c2321; --muted:#5f6b67; --line:#dfe3e0;
-  --accent:#1f5c4d; --accent-2:#8fb8a9; --accent-soft:#e3eee9; --warn:#9a5b0b; --warn-soft:#f7ecd9; --neutral-soft:#eceeed;
+  --accent:#1f5c4d; --accent-2:#8fb8a9; --accent-soft:#e3eee9; --warn:#9a5b0b; --warn-soft:#f7ecd9; --neutral-soft:#eceeed; --info:#3a6ea5;
   --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",-apple-system,"Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
-  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; color-scheme:dark}}
+  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; --info:#7fa8d6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
-  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; color-scheme:dark}
+  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; --info:#7fa8d6; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
 .wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
@@ -91,6 +91,15 @@ tfoot td{font-weight:600;border-bottom:none}
 .aviso{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13px;max-width:80ch}
 .foot{color:var(--muted);font-size:12.5px;display:flex;flex-direction:column;gap:8px;max-width:95ch}
 .fontes{display:flex;flex-wrap:wrap;gap:8px}
+/* Parcelas recebidas: total, do mês, atrasadas, adiantadas */
+.kpis[hidden]{display:none}
+.kpis.rec .kpi{border-top:3px solid var(--sw,var(--line))}
+.kpis.rec .kpi small .o{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.rec-det summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:500;padding:4px 0}
+.rec-det .tablebox{margin-top:8px}
+table.rec-tab{min-width:640px}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted);margin:-4px 0 6px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 </style>
 
 <div class="wrap">
@@ -111,6 +120,13 @@ tfoot td{font-weight:600;border-bottom:none}
     <div style="display:flex;flex-direction:column;gap:28px;min-width:0">
       <div><div class="eyebrow" id="periodo-rotulo"></div></div>
       <section class="kpis" id="kpis" aria-label="Resumo do período"></section>
+
+      <section id="recebidas" style="display:flex;flex-direction:column;gap:10px">
+        <h2 class="sec" style="margin:0">Parcelas recebidas</h2>
+        <div class="kpis rec" id="kpis-rec" aria-label="Parcelas recebidas no período"></div>
+        <div class="meta" id="rec-nota"></div>
+        <details class="rec-det" id="rec-det" hidden><summary id="rec-sum"></summary><div class="tablebox"><table class="rec-tab"><thead><tr><th>Cliente</th><th>Tipo</th><th>Venceu em</th><th>Pago em</th><th style="text-align:right">Valor</th><th>Sistema</th></tr></thead><tbody id="rec-tb"></tbody></table></div></details>
+      </section>
 
       <section>
         <h2 class="sec">Evolução mensal</h2>
@@ -166,6 +182,7 @@ tfoot td{font-weight:600;border-bottom:none}
       <div class="foot">
         <div><b>De onde vêm os números.</b> Honorários, entrada e parcelamento saem da Cláusula 2ª do Contrato HO Assinado de cada pasta marcada “OK” em Preparação para Ingresso. “Pago no Asaas” é o que teve baixa lá; entrada paga por Conta Azul ou por fora não aparece nessa coluna. Junho e julho de 2026 vêm das planilhas “DADOS CONTRATOS” já conferidas; fevereiro de 2023 a maio de 2026, da planilha “DADOS CONTRATOS - CONSOLIDADO 2023-2026”.</div>
         <div><b>Entradas.</b> Até julho de 2026 vale o caixa de entradas registrado nas planilhas. Nos outros meses, a entrada é a do mês: parte de entrada dividida que caiu em outro mês sai, e parte de contrato antigo paga no mês entra, marcada “contrato de outro mês”. Esse contrato não conta em honorários nem na quantidade.</div>
+        <div><b>Parcelas recebidas.</b> Vêm da coleta diária do Painel Financeiro (ASAAS pela data de crédito; Conta Azul pelo extrato), com o mesmo critério de “recebido no mês” de lá. Cada parcela que entrou no mês é separada pelo dia em que o cliente pagou, comparado com o vencimento: em dia (pagou no mês do vencimento), atrasada (pagou em mês posterior) ou adiantada (pagou antes do mês do vencimento). Cartão pago em dia no fim de um mês e creditado só no seguinte conta como em dia. Os valores incluem juros de atraso. A coleta começa em janeiro de 2026.</div>
         <div class="fontes" id="fontes"></div>
       </div>
     </div>
@@ -295,7 +312,101 @@ function renderEvolucao(){
     miniBarras("Contratos fechados", ms, rs.map(r=>r.n), n) +
     miniBarras("Honorários contratados", ms, rs.map(r=>r.tot), brlK) +
     miniBarras("Ticket médio", ms, rs.map(r=>r.ticket||0), brlK) +
-    miniBarras("Entradas", ms, rs.map(r=>r.entradas), brlK);
+    miniBarras("Entradas", ms, rs.map(r=>r.entradas), brlK) +
+    miniEmpilhado("Parcelas recebidas", Object.keys(REC).sort(), REC_GRUPOS);
+}
+
+// ---- Parcelas recebidas (pedido de 05/11/2026) -------------------------------
+// Vem de "recebimentos" no arquivo do Drive, montado por gerar_dados_painel.py a
+// partir da coleta diária do Painel Financeiro (ASAAS + Conta Azul). Cada mês
+// separa as parcelas pagas nele pelo vencimento: do próprio mês, atrasadas
+// (venceram antes) e adiantadas (vencem depois). "origem" = mês do vencimento.
+let REC = {};
+const REC_GRUPOS = [
+  {k:"do_mes",     nome:"Em dia",         cor:"var(--accent)"},
+  {k:"atrasadas",  nome:"Atrasadas",      cor:"var(--warn)"},
+  {k:"adiantadas", nome:"Adiantadas",     cor:"var(--info)"},
+];
+const dataBR = s => s ? s.slice(0,10).split("-").reverse().join("/") : "—";
+function recPeriodo(){
+  const ms = Object.keys(REC).sort().filter(m => sel==="todos" || (ehAno(sel) ? m.startsWith(sel) : m===sel));
+  const g = {}; REC_GRUPOS.forEach(x => g[x.k] = {v:0, n:0, origem:{}, itens:[]});
+  ms.forEach(m => REC_GRUPOS.forEach(x => { const s = REC[m][x.k]; if (!s) return; const t = g[x.k];
+    t.v += s.v||0; t.n += s.n||0;
+    Object.entries(s.origem||{}).forEach(([o,v]) => t.origem[o] = (t.origem[o]||0) + v);
+    (s.itens||[]).forEach(i => t.itens.push({tipo:x.k, mes:m, cli:i[0], v:i[1], venc:i[2], pago:i[3], src:i[4]})); }));
+  return {ms, g};
+}
+function listaOrigem(origem, max){
+  const it = Object.entries(origem).sort((a,b)=>b[1]-a[1]);
+  const top = it.slice(0, max), resto = it.slice(max).reduce((s,[,v])=>s+v,0);
+  const linhas = top.sort((a,b)=>b[0]<a[0]?-1:1).map(([m,v]) => `<span class="o">${rot(m)} · ${brl(v)}</span>`);
+  if (resto) linhas.push(`<span class="o">outros ${it.length-max} meses · ${brl(resto)}</span>`);
+  return linhas.join("");
+}
+function renderRecebidas(){
+  const box = document.getElementById("kpis-rec"), nota = document.getElementById("rec-nota"), det = document.getElementById("rec-det");
+  const {ms, g} = recPeriodo();
+  if (!ms.length){
+    box.innerHTML = ""; box.hidden = true; det.hidden = true;
+    nota.textContent = !Object.keys(REC).length
+      ? (FONTE === "banco" ? "Os recebimentos aparecem quando o painel consegue ler o arquivo do Google Drive." : "Ainda não há dados de recebimento.")
+      : `Não há coleta de recebimentos para ${rotSel()}. Ela começa em ${rotL(Object.keys(REC).sort()[0]).toLowerCase()}.`;
+    return;
+  }
+  box.hidden = false;
+  const um = ms.length===1, mes = um ? ms[0] : null;
+  const tot = REC_GRUPOS.reduce((s,x)=>s+g[x.k].v,0), nTot = REC_GRUPOS.reduce((s,x)=>s+g[x.k].n,0);
+  const pct = v => tot ? Math.round(v/tot*100) + "%" : "—";
+  const quando = um ? "em " + rotL(mes).toLowerCase() : "em " + rotSel();
+  const cards = [
+    ["var(--ink)", um ? `Parcelas recebidas em ${MESL[+mes.slice(5)-1].toLowerCase()}` : "Parcelas recebidas", brl(tot),
+      `${nTot} pagamentos` + REC_GRUPOS.map(x=>`<span class="o">${x.nome.toLowerCase()} · ${pct(g[x.k].v)}</span>`).join("")],
+    ["var(--accent)", "Pagas em dia", brl(g.do_mes.v),
+      `${g.do_mes.n} parcelas pagas no mês do vencimento` + (() => {
+        // Cartão/boleto pago em dia no fim do mês anterior, com crédito só neste mês.
+        const fora = um ? Object.entries(g.do_mes.origem).filter(([m])=>m!==mes) : [];
+        const v = fora.reduce((s,[,x])=>s+x,0);
+        return v ? `<span class="o">${brl(v)} de ${fora.map(([m])=>rot(m)).join(", ")}, crédito só agora</span>` : "";
+      })()],
+    ["var(--warn)", "Atrasadas recebidas", brl(g.atrasadas.v),
+      g.atrasadas.n ? `${g.atrasadas.n} parcelas pagas depois do vencimento · venceram em:` + listaOrigem(g.atrasadas.origem, 4) : "nenhuma parcela atrasada paga " + quando],
+    ["var(--info)", "Adiantadas recebidas", brl(g.adiantadas.v),
+      g.adiantadas.n ? `${g.adiantadas.n} parcelas pagas antes do vencimento · venceriam em:` + listaOrigem(g.adiantadas.origem, 4) : "nenhuma parcela adiantada " + quando],
+  ];
+  box.innerHTML = cards.map(([c,l,v,s])=>`<div class="kpi" style="--sw:${c}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join("");
+
+  const hoje = new Date().toISOString().slice(0,7), at = um && REC[mes].atualizado_em;
+  nota.textContent = "Parcelas de honorários com crédito no ASAAS ou na Conta Azul no período, separadas pelo dia em que o cliente pagou comparado com o vencimento. A entrada dos contratos fica no card Entradas; Pix avulso e de parceiro ficam de fora."
+    + (um && mes===hoje ? " Mês em curso." : "") + (at ? ` Coleta de ${dataBR(at)} às ${at.slice(11,16)}.` : "");
+
+  const itens = g.atrasadas.itens.concat(g.adiantadas.itens).sort((a,b)=> a.mes<b.mes?1:a.mes>b.mes?-1: a.tipo<b.tipo?1:a.tipo>b.tipo?-1: a.venc<b.venc?-1:1);
+  det.hidden = !itens.length;
+  if (itens.length){
+    document.getElementById("rec-sum").textContent = `Ver as ${itens.length} parcelas atrasadas e adiantadas, cliente a cliente`;
+    document.getElementById("rec-tb").innerHTML = itens.map(i => `<tr><td class="nome">${esc(title(i.cli))}${um?"":` <span class="meta">· paga em ${rot(i.mes)}</span>`}</td>
+      <td>${i.tipo==="atrasadas"?'<span class="pill p-warn">Atrasada</span>':'<span class="pill p-n">Adiantada</span>'}</td>
+      <td>${dataBR(i.venc)}</td><td>${dataBR(i.pago)}</td><td class="num">${brl(i.v)}</td><td>${i.src==="CA"?"Conta Azul":"ASAAS"}</td></tr>`).join("");
+  }
+}
+function miniEmpilhado(titulo, ms, grupos){
+  if (!ms.length) return "";
+  const W=560,H=170,pl=8,pr=8,pt=20,pb=24;
+  const tots = ms.map(m => grupos.reduce((s,x)=>s+((REC[m][x.k]||{}).v||0),0)), max = Math.max(1,...tots);
+  const bw=(W-pl-pr)/ms.length, gap=Math.min(14,bw*.3);
+  const ativo = m => sel==="todos" || sel===m || (ehAno(sel) && m.startsWith(sel));
+  const bars = ms.map((m,i)=>{
+    let y = H-pb; const x = pl+i*bw+gap/2, w = Math.max(bw-gap,1), cx = (x+w/2).toFixed(1);
+    const dica = rotL(m) + ": " + brl(tots[i]) + " — " + grupos.map(g=>g.nome.toLowerCase()+" "+brl((REC[m][g.k]||{}).v||0)).join(", ");
+    const partes = grupos.map(g => { const v=(REC[m][g.k]||{}).v||0, h=(H-pt-pb)*v/max; y -= h;
+      return h>0 ? `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${g.cor}"><title>${dica}</title></rect>` : ""; }).join("");
+    // Valor só no mês escolhido (ou no último, quando o período tem vários meses), para não encavalar.
+    const mostra = sel===m || ((sel==="todos" || ehAno(sel)) && m===ms.filter(ativo).slice(-1)[0]);
+    const marca = ativo(m) && sel!=="todos" && !ehAno(sel) ? `<rect x="${x.toFixed(1)}" y="${H-pb+2}" width="${w.toFixed(1)}" height="3" fill="var(--ink)"/>` : "";
+    return partes + marca + (mostra ? `<text x="${cx}" y="${(y-5).toFixed(1)}" text-anchor="middle" class="lbl">${brlK(tots[i])}</text>` : "") + `<text x="${cx}" y="${H-8}" text-anchor="middle">${rot(m)}</text>`;
+  }).join("");
+  const leg = `<div class="leg">${grupos.map(g=>`<span><i style="background:${g.cor}"></i>${g.nome}</span>`).join("")}</div>`;
+  return `<div class="panel"><h3>${titulo}</h3>${leg}<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${titulo} por mês, separadas em do próprio mês, atrasadas e adiantadas">${bars}<line x1="${pl}" x2="${W-pr}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/></svg></div>`;
 }
 
 function renderProjecao(){
@@ -404,7 +515,7 @@ function renderFontes(){
 }
 function render(){
   if (sel!=="todos" && !(ehAno(sel) ? mesesOrd().some(m=>m.startsWith(sel)) : mesesOrd().includes(sel))) sel = "todos";
-  renderPeriodo(); renderKpis(); renderEvolucao(); renderLeituras(); renderProjecao(); renderDist(); renderTabela(); renderFontes();
+  renderPeriodo(); renderKpis(); renderRecebidas(); renderEvolucao(); renderLeituras(); renderProjecao(); renderDist(); renderTabela(); renderFontes();
 }
 ["q","vmin","vmax"].forEach(id=>document.getElementById(id).addEventListener("input",renderTabela));
 [selA,selU,selF].forEach(s=>s.addEventListener("change",renderTabela));
@@ -459,12 +570,12 @@ const AVISO_DRIVE = {
         try { d = lerArquivo(ev.result.payload); } catch(e) { d = null; }
         if (!d || !Array.isArray(d.contratos)){ if (FONTE !== "drive") aviso("O arquivo de dados do Google Drive veio num formato inesperado; mostrando a cópia guardada no painel."); return; }
         FONTE = "drive"; ATUALIZADO = d.gerado_em || null;
-        ROWS = d.contratos; MESES = d.meses || {};
+        ROWS = d.contratos; MESES = d.meses || {}; REC = d.recebimentos || {};
         aviso(""); pronto();
       } else {
         const code = ev.error && ev.error.code;
         if (["needs_reauth","server_not_connected","not_in_manifest","blocked_by_policy","approval_required","selection_required"].includes(code) && FONTE === "drive"){
-          FONTE = null; ROWS = []; MESES = {}; juntar(); pronto();
+          FONTE = null; ROWS = []; MESES = {}; REC = {}; juntar(); pronto();
         }
         if (FONTE !== "drive") aviso(AVISO_DRIVE[code] || "Não consegui ler o Google Drive agora; mostrando a cópia guardada no painel. Recarregue em alguns minutos.");
       }

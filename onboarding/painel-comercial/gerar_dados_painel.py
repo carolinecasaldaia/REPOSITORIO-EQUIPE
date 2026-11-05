@@ -60,6 +60,56 @@ def coletar(meses):
             print("%s: falhou\n%s" % (mes, traceback.format_exc()))
 
 
+FINANCEIRO = AQUI.parent / "PAINEL FINANCEIRO" / "dados"
+
+
+def recebimentos():
+    """Parcelas de honorários recebidas em cada mês, separadas pelo vencimento.
+
+    Pedido de 05/11/2026: ver de onde veio o total recebido de parcelas no mês.
+    Lê os dados/financeiro_<mes>.json do Painel Financeiro (coleta diária do
+    ASAAS e da Conta Azul) e usa o mesmo critério de "recebido no mês" de lá
+    (conjunto "r"). Só parcelas (tipo H): entrada tem card próprio e Pix
+    avulso/parceiro fica de fora.
+    Entra no mês pela data de crédito; a classificação é pela data em que o
+    cliente pagou, comparada com o vencimento:
+      do_mes      paga em dia (no mês do vencimento)
+      atrasadas   paga depois do mês do vencimento   (origem = mês do vencimento)
+      adiantadas  paga antes do mês do vencimento    (origem = mês do vencimento)
+    """
+    saida = {}
+    for f in sorted(FINANCEIRO.glob("financeiro_*.json")):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            mes = d["mes"]
+            grupos = {g: {"v": 0, "n": 0, "origem": {}, "itens": []}
+                      for g in ("do_mes", "atrasadas", "adiantadas")}
+            for linha in d.get("linhas", []):
+                c = linha.split("|")
+                if len(c) < 10 or c[3] != "H" or "r" not in c[9]:
+                    continue
+                # Atraso é medido pelo dia em que o cliente pagou, não pelo crédito:
+                # cartão pago no vencimento (15/09) cai na conta só em outubro e
+                # não é dívida atrasada. Sem data de pagamento, vale o mês do crédito.
+                venc, pagou = c[6][:7], (c[8] or "")[:7] or mes
+                g = grupos["do_mes" if pagou == venc else "atrasadas" if pagou > venc else "adiantadas"]
+                cent = int(c[2])
+                g["v"] += cent
+                g["n"] += 1
+                g["origem"][venc] = g["origem"].get(venc, 0) + cent
+                if g is not grupos["do_mes"]:
+                    g["itens"].append([c[1], round(cent / 100, 2), c[6], c[8], c[0]])
+            for g in grupos.values():
+                g["v"] = round(g["v"] / 100, 2)
+                g["origem"] = {k: round(v / 100, 2) for k, v in sorted(g["origem"].items())}
+                g["itens"].sort(key=lambda x: (x[2], x[0]))
+            grupos["atualizado_em"] = d.get("atualizado_em")
+            saida[mes] = grupos
+        except Exception:
+            print("%s: recebimentos não lidos\n%s" % (f.name, traceback.format_exc()))
+    return saida
+
+
 def montar():
     contratos, meses = [], {}
     for f in sorted(DADOS.glob("mes_*.json")):
@@ -75,7 +125,7 @@ def montar():
         meses.setdefault(d["mes"], d)
         contratos.extend({k: l.get(k) for k in CAMPOS} for l in linhas)
     return {"gerado_em": datetime.now().strftime("%Y-%m-%dT%H:%M"),
-            "meses": meses, "contratos": contratos}
+            "meses": meses, "contratos": contratos, "recebimentos": recebimentos()}
 
 
 def main():
