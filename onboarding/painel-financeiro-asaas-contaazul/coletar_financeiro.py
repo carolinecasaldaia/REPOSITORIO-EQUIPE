@@ -112,8 +112,11 @@ def linhas_asaas(mes, hoje):
     nomes = nomes_clientes(chave, {p["customer"] for p, _ in todos.values()})
     saida = []
     for p, fl in todos.values():
-        st = {"RECEIVED": "R", "RECEIVED_IN_CASH": "R", "CONFIRMED": "C",
-              "OVERDUE": "V", "PENDING": "P"}.get(p["status"])
+        # DUNNING_RECEIVED = recebida via negativação (Serasa): é dinheiro que
+        # entrou. Ficava de fora até 05/11/2026 (3 cobranças, R$ 1.556,96 em
+        # ago e out/2026).
+        st = {"RECEIVED": "R", "RECEIVED_IN_CASH": "R", "DUNNING_RECEIVED": "R",
+              "CONFIRMED": "C", "OVERDUE": "V", "PENDING": "P"}.get(p["status"])
         if st is None:              # estornada, em análise, chargeback: fora da conta
             continue
         if st == "P" and p["dueDate"] < hoje:
