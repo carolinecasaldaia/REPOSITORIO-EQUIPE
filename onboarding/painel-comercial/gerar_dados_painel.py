@@ -273,7 +273,33 @@ def pix_parceiro_extratos():
             cache_arq.write_text(json.dumps(novo, ensure_ascii=False), encoding="utf-8")
         except Exception:
             pass
-    return sorted(k for k, n in maximo.items() for _ in range(n))
+    return sorted(k for k, n in maximo.items() for _ in range(n)
+                  if (k[0], k[1]) not in PARCEIRO_IGNORAR)
+
+
+# Pix do Israel que não são honorário de contrato (reembolsos; Caroline, 06/11/2026).
+PARCEIRO_IGNORAR = {("2026-03-07", 3925), ("2026-06-30", 3998)}
+
+
+# --------------------------------------- Entradas pagas por Pix direto na conta
+# cruzar_entradas_extratos.py (venv do Levantamento de Alvarás, que lê todos os
+# créditos dos extratos) casa entrada combinada x Pix do próprio cliente e grava
+# dados/entradas_extrato.json. Ele só trabalha quando a pasta EXTRATOS muda.
+VENV_ALVARAS = Path.home() / ".honorarios-alvaras" / "venv" / "bin" / "python"
+
+
+def entradas_extratos():
+    import subprocess
+    if VENV_ALVARAS.exists():
+        try:
+            subprocess.run([str(VENV_ALVARAS), str(AQUI / "cruzar_entradas_extratos.py")],
+                           timeout=600, check=False, stdout=subprocess.DEVNULL)
+        except Exception:
+            print("cruzar_entradas_extratos falhou\n%s" % traceback.format_exc())
+    try:
+        return json.loads((DADOS / "entradas_extrato.json").read_text(encoding="utf-8"))["entradas"]
+    except Exception:
+        return []
 
 
 def recebimentos():
@@ -292,6 +318,22 @@ def recebimentos():
     """
     saida = {}
     extrato = pix_parceiro_extratos()
+    from cruzar_entradas_extratos import mesmo_cliente
+    entradas_ext = entradas_extratos()
+    # tudo o que já entrou por sistema (ASAAS, Conta Azul, Astrea), para não contar
+    # de novo uma entrada achada no extrato: mesmo cliente e valor, até 5 dias
+    por_sistema = []
+    for f in sorted(FINANCEIRO.glob("financeiro_*.json")):
+        try:
+            for linha in json.loads(f.read_text(encoding="utf-8")).get("linhas", []):
+                c = linha.split("|")
+                if len(c) >= 10 and "r" in c[9] and (c[8] or c[6]):
+                    por_sistema.append((c[1], int(c[2]), date.fromisoformat((c[8] or c[6])[:10])))
+        except Exception:
+            pass
+    entradas_ext = [e for e in entradas_ext if not any(
+        s[1] == e["centavos"] and abs((s[2] - date.fromisoformat(e["data"])).days) <= 5
+        and mesmo_cliente(e["cliente"], s[0]) for s in por_sistema)]
     for f in sorted(FINANCEIRO.glob("financeiro_*.json")):
         try:
             d = json.loads(f.read_text(encoding="utf-8"))
@@ -343,10 +385,19 @@ def recebimentos():
                 g["n"] += 1
                 g["itens"].append([data, round(cent / 100, 2), conta])
                 fonte["EXT"] += cent
+            # entrada de contrato paga por Pix direto (achada no extrato)
+            for e in entradas_ext:
+                if e["data"][:7] != mes:
+                    continue
+                g = grupos["entradas"]
+                g["v"] += e["centavos"]
+                g["n"] += 1
+                g["itens"].append([e["data"], round(e["centavos"] / 100, 2), e["conta"], e["cliente"]])
+                fonte["EXT"] += e["centavos"]
             for g in grupos.values():
                 g["v"] = round(g["v"] / 100, 2)
                 g["origem"] = {k: round(v / 100, 2) for k, v in sorted(g["origem"].items())}
-                g["itens"].sort(key=lambda x: (x[0], str(x[2])) if len(x) == 3 else (x[2], x[0]))
+                g["itens"].sort(key=lambda x: (x[0], str(x[2])) if len(x) in (3, 4) else (x[2], x[0]))
             grupos["fonte"] = {k: round(v / 100, 2) for k, v in fonte.items()}
             grupos["atualizado_em"] = d.get("atualizado_em")
             saida[mes] = grupos
