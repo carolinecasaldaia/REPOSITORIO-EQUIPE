@@ -199,7 +199,10 @@ def _creditos_ofx(arq):
 def _creditos_pdf(arq):
     """Extratos em PDF do Santander (consolidado PF/PJ), Sicredi e Mercado Pago."""
     from pypdf import PdfReader
-    L = [l for p in PdfReader(str(arq)).pages for l in (p.extract_text() or "").splitlines()]
+    leitor = PdfReader(str(arq))
+    if leitor.is_encrypted:     # PDF do C6 com senha: o C6 vai pelo OFX
+        return []
+    L = [l for p in leitor.pages for l in (p.extract_text() or "").splitlines()]
     topo = " ".join(L[:40])
     prox = lambda i: L[i + 1] if i + 1 < len(L) else ""
     out = []
@@ -392,7 +395,10 @@ def recebimentos():
                 g = grupos["entradas"]
                 g["v"] += e["centavos"]
                 g["n"] += 1
-                g["itens"].append([e["data"], round(e["centavos"] / 100, 2), e["conta"], e["cliente"]])
+                como = {"dividida": " · paga em partes", "parcial": " · paga só em parte",
+                        "parente": " · paga por parente"}.get(e.get("como"), "")
+                g["itens"].append([e["data"], round(e["centavos"] / 100, 2), e["conta"] + como,
+                                   e["cliente"]])
                 fonte["EXT"] += e["centavos"]
             for g in grupos.values():
                 g["v"] = round(g["v"] / 100, 2)

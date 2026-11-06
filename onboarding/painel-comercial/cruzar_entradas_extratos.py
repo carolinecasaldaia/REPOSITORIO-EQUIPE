@@ -60,7 +60,13 @@ def mesmo_cliente(cliente, descricao):
 
 def data_br(s):
     m = re.match(r"(\d{2})[./](\d{2})[./](\d{4})", s or "")
-    return date(int(m[3]), int(m[2]), int(m[1])) if m else None
+    if not m:
+        return None
+    try:
+        return date(int(m[3]), int(m[2]), int(m[1]))
+    except ValueError:          # planilha com data impossível (31/02): último dia do mês
+        a, mes = int(m[3]), int(m[2])
+        return date(a + (mes == 12), mes % 12 + 1, 1) - timedelta(days=1)
 
 
 def assinatura():
@@ -86,7 +92,8 @@ def main():
     for c in cred:
         c["d"] = c["data"] if isinstance(c["data"], date) else date.fromisoformat(str(c["data"])[:10])
         c["cent"] = round(c["valor"] * 100)
-    usados, achados = set(), []
+    # Cada parte de entrada: (contrato, centavos, data combinada, janela).
+    pendentes = []
     for k in contratos:
         partes = [(p["valor"], data_br(p.get("data"))) for p in (k.get("entrada_partes") or [])
                   if p.get("valor")]
@@ -95,19 +102,66 @@ def main():
         a, m = map(int, k["mes"].split("-"))
         inicio = date(a, m, 1) - timedelta(days=15)
         for valor, d0 in partes:
-            alvo = round(valor * 100)
-            de, ate = ((d0 - timedelta(days=20), d0 + timedelta(days=20)) if d0
-                       else (inicio, inicio + timedelta(days=90)))
-            cand = [i for i, c in enumerate(cred) if i not in usados and c["cent"] == alvo
-                    and de <= c["d"] <= ate and mesmo_cliente(k["cliente"], c["descricao"])]
-            if not cand:
-                continue
-            i = min(cand, key=lambda i: abs((cred[i]["d"] - (d0 or cred[i]["d"])).days))
-            usados.add(i)
-            c = cred[i]
-            achados.append({"contrato": k["id"], "mes_contrato": k["mes"], "cliente": k["cliente"],
-                            "data": c["d"].isoformat(), "centavos": alvo,
-                            "conta": "%s %s" % (c["banco"], c["conta"])})
+            janela = ((d0 - timedelta(days=20), d0 + timedelta(days=20)) if d0
+                      else (inicio, inicio + timedelta(days=90)))
+            pendentes.append([k, round(valor * 100), d0, janela])
+    usados, achados = set(), []
+
+    def anotar(k, i, cent, como):
+        usados.add(i)
+        c = cred[i]
+        achados.append({"contrato": k["id"], "mes_contrato": k["mes"], "cliente": k["cliente"],
+                        "data": c["d"].isoformat(), "centavos": cent,
+                        "conta": "%s %s" % (c["banco"], c["conta"]), "como": como,
+                        "pagador": " ".join(c["descricao"].split())[:60]})
+
+    # 1) o próprio cliente, valor exato
+    for p in pendentes:
+        k, alvo, d0, (de, ate) = p
+        cand = [i for i, c in enumerate(cred) if i not in usados and c["cent"] == alvo
+                and de <= c["d"] <= ate and mesmo_cliente(k["cliente"], c["descricao"])]
+        if cand:
+            anotar(k, min(cand, key=lambda i: abs((cred[i]["d"] - (d0 or cred[i]["d"])).days)),
+                   alvo, "exato")
+            p[1] = 0
+    # 2) o próprio cliente, entrada paga em partes (2 x R$ 1.000) ou só em parte
+    #    (R$ 500 de R$ 700): Pix dele na janela, somando no máximo o valor combinado.
+    #    (Caroline, 06/11/2026)
+    for p in pendentes:
+        k, alvo, d0, (de, ate) = p
+        if not alvo:
+            continue
+        if d0:      # em partes pode ir até 30 dias depois, mas antes da 1ª parcela
+            ate = d0 + timedelta(days=30)
+            p1 = data_br(k.get("parcelas_inicio"))
+            if p1 and p1 > d0:
+                ate = min(ate, p1 - timedelta(days=1))
+        parcela = round((k.get("parcelas_valor") or 0) * 100)   # Pix do valor da parcela é parcela
+        cand = sorted((i for i, c in enumerate(cred) if i not in usados and c["cent"] < alvo
+                       and c["cent"] != parcela
+                       and de <= c["d"] <= ate and mesmo_cliente(k["cliente"], c["descricao"])),
+                      key=lambda i: cred[i]["d"])
+        soma, pegos = 0, []
+        for i in cand:
+            if soma + cred[i]["cent"] <= alvo:
+                soma += cred[i]["cent"]
+                pegos.append(i)
+        for i in pegos:
+            anotar(k, i, cred[i]["cent"], "dividida" if soma == alvo else "parcial")
+        p[1] = alvo - soma
+    # 3) parente pagou: valor exato, até 3 dias da data combinada e 2 sobrenomes em comum
+    #    (Emanuelle Pedrosa Primo pela Maria de Lourdes Pedrosa Primo).
+    for p in pendentes:
+        k, alvo, d0, _ = p
+        if not alvo or not d0:
+            continue
+        sobrenomes = {t for t in tokens(k["cliente"])[1:] if len(t) >= 3}
+        cand = [i for i, c in enumerate(cred) if i not in usados and c["cent"] == alvo
+                and abs((c["d"] - d0).days) <= 3
+                and len(sobrenomes & set(tokens(c["descricao"]))) >= 2]
+        if cand:
+            anotar(k, min(cand, key=lambda i: abs((cred[i]["d"] - d0).days)), alvo, "parente")
+            p[1] = 0
     achados.sort(key=lambda x: x["data"])
     SAIDA.parent.mkdir(exist_ok=True)
     SAIDA.write_text(json.dumps({"assinatura": chave, "entradas": achados}, ensure_ascii=False),
