@@ -167,32 +167,111 @@ EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
 BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi"}
 
 
+MESES_PT = {m: i + 1 for i, m in enumerate(
+    "janeiro fevereiro março abril maio junho julho agosto setembro outubro novembro dezembro".split())}
+SICREDI_PF = "152899"        # conta PF do Sicredi (15289-9); a outra conta Sicredi é a PJ
+
+
+def _cent(s):
+    return round(float(s.replace(".", "").replace(",", ".")) * 100)
+
+
+def _creditos_ofx(arq):
+    txt = arq.read_bytes().decode("latin-1")
+    banco = (_re.search(r"<BANKID>\s*(\d+)", txt) or [None, ""])[1]
+    acct = (_re.search(r"<ACCTID>\s*(\d+)", txt) or [None, ""])[1]
+    conta = BANCOS.get(banco, "Banco %s" % banco if banco else "Extrato")
+    if conta == "Sicredi":
+        conta += " PF" if acct.endswith(SICREDI_PF) else " PJ"
+    out = []
+    for t in _re.findall(r"<STMTTRN>(.*?)(?:</STMTTRN>|(?=<STMTTRN>)|</BANKTRANLIST>)", txt, _re.S | _re.I):
+        campo = lambda n: (_re.search(r"<%s>\s*([^<\r\n]*)" % n, t, _re.I) or [None, ""])[1].strip()
+        valor = float(campo("TRNAMT").replace(",", ".") or 0)
+        if valor <= 0 or not PARCEIRO.search(campo("NAME") + " " + campo("MEMO")):
+            continue
+        d = campo("DTPOSTED")[:8]
+        out.append(("%s-%s-%s" % (d[:4], d[4:6], d[6:8]), round(valor * 100), conta))
+    return out
+
+
+def _creditos_pdf(arq):
+    """Extratos em PDF do Santander (consolidado PF/PJ), Sicredi e Mercado Pago."""
+    from pypdf import PdfReader
+    L = [l for p in PdfReader(str(arq)).pages for l in (p.extract_text() or "").splitlines()]
+    topo = " ".join(L[:40])
+    prox = lambda i: L[i + 1] if i + 1 < len(L) else ""
+    out = []
+    if "EXTRATO CONSOLIDADO INTELIGENTE" in topo:              # Santander
+        m = _re.search(r"\b(%s)/(\d{4})" % "|".join(MESES_PT), topo)
+        ano, mes = int(m[2]), MESES_PT[m[1]]
+        conta = "Santander " + ("PJ" if "Extrato_PJ" in topo else "PF")
+        dia = None               # o Santander só escreve a data no 1º lançamento do dia
+        for i, l in enumerate(L):
+            d = _re.match(r"\s*(\d{2})/(\d{2})\b", l)
+            if d and int(d[2]) == mes:
+                dia = int(d[1])
+            if dia is None or not PARCEIRO.search(l) or "PIX RECEBIDO" not in (L[i - 1] + l).upper():
+                continue
+            v = _re.search(r"(\d{1,3}(?:\.\d{3})*,\d{2})(-?)", prox(i))
+            if v and v[2] != "-":                                # "500,00-" é débito
+                out.append(("%04d-%02d-%02d" % (ano, mes, dia), _cent(v[1]), conta))
+    elif "Cooperativa:" in topo and "Extrato de conta corrente" in topo:   # Sicredi
+        conta = "Sicredi " + ("PJ" if _re.search(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", topo) else "PF")
+        data = None
+        for i, l in enumerate(L):
+            d = _re.fullmatch(r"\s*(\d{2})/(\d{2})/(\d{4})\s*", l)
+            if d:
+                data = "%s-%s-%s" % (d[3], d[2], d[1])
+            if data and PARCEIRO.search(l) and "RECEBIMENTO" in l.upper():
+                v = _re.search(r"([+-])\s*R\$\s*([\d\.]+,\d{2})", prox(i))
+                if v and v[1] == "+":
+                    out.append((data, _cent(v[2]), conta))
+    elif "DETALHE DOS MOVIMENTOS" in " ".join(L[:80]):          # Mercado Pago
+        for i, l in enumerate(L):
+            if not (PARCEIRO.search(l) and "recebido" in l.lower()):
+                continue
+            d = _re.search(r"(\d{2})-(\d{2})-(\d{4})", L[i - 1] + " " + l)
+            v = _re.search(r"R\$\s*(-?)\s*([\d\.]+,\d{2})", l + " " + prox(i))
+            if d and v and not v[1]:
+                out.append(("%s-%s-%s" % (d[3], d[2], d[1]), _cent(v[2]), "Mercado Pago"))
+    return out
+
+
 def pix_parceiro_extratos():
-    """(data AAAA-MM-DD, centavos, conta) de cada crédito do parceiro nos .ofx da pasta EXTRATOS."""
-    achados, vistos = [], set()
+    """(data AAAA-MM-DD, centavos, conta) de cada crédito do parceiro nos extratos
+    (.ofx ou .pdf) da pasta EXTRATOS. Débitos (Pix enviado a ele) ficam de fora.
+    Extratos da mesma conta com períodos sobrepostos não duplicam: de cada
+    (conta, data, valor) vale a maior quantidade vista num único arquivo."""
+    from collections import Counter
+    # Ler 46 PDFs leva ~20 s; cada arquivo só é relido se mudar (nome/tamanho/data).
+    cache_arq = DADOS / "extratos_parceiro_cache.json"
+    try:
+        cache = json.loads(cache_arq.read_text(encoding="utf-8"))
+    except Exception:
+        cache = {}
+    novo, maximo = {}, Counter()
     for arq in sorted(EXTRATOS.glob("**/*")) if EXTRATOS.is_dir() else []:
-        if arq.suffix.lower() != ".ofx":
+        tipo = arq.suffix.lower()
+        if tipo not in (".ofx", ".pdf"):
             continue
         try:
-            txt = arq.read_bytes().decode("latin-1")
-            banco = (_re.search(r"<BANKID>\s*(\d+)", txt) or [None, ""])[1]
-            conta = BANCOS.get(banco, "Banco %s" % banco if banco else "Extrato") + " · " + arq.stem
-            for t in _re.findall(r"<STMTTRN>(.*?)(?:</STMTTRN>|(?=<STMTTRN>)|</BANKTRANLIST>)", txt, _re.S | _re.I):
-                campo = lambda n: (_re.search(r"<%s>\s*([^<\r\n]*)" % n, t, _re.I) or [None, ""])[1].strip()
-                valor = float(campo("TRNAMT").replace(",", ".") or 0)
-                texto = campo("NAME") + " " + campo("MEMO")
-                if valor <= 0 or not PARCEIRO.search(texto):
-                    continue
-                d = campo("DTPOSTED")[:8]
-                data = "%s-%s-%s" % (d[:4], d[4:6], d[6:8])
-                chave = (data, round(valor * 100), campo("FITID") or texto)
-                if chave in vistos:          # mesmo lançamento em dois extratos
-                    continue
-                vistos.add(chave)
-                achados.append((data, round(valor * 100), conta))
+            st = arq.stat()
+            assinatura = "%s|%d|%d" % (arq.relative_to(EXTRATOS), st.st_size, int(st.st_mtime))
+            if assinatura in cache:
+                lista = [tuple(x) for x in cache[assinatura]]
+            else:
+                lista = _creditos_ofx(arq) if tipo == ".ofx" else _creditos_pdf(arq)
+            novo[assinatura] = lista
+            for k, n in Counter(lista).items():
+                maximo[k] = max(maximo[k], n)
         except Exception:
             print("%s: extrato não lido\n%s" % (arq.name, traceback.format_exc()))
-    return achados
+    if novo != cache:
+        try:
+            cache_arq.write_text(json.dumps(novo, ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+    return sorted(k for k, n in maximo.items() for _ in range(n))
 
 
 def recebimentos():
