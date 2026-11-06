@@ -104,6 +104,11 @@ tfoot td{font-weight:600;border-bottom:none}
 .abas button:hover{color:var(--ink)}
 .abas button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
 .geral{display:flex;flex-direction:column;gap:20px}
+#s-kpis{grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
+table.s-tab{min-width:760px}
+.s-tab td.fraco{background:var(--warn-soft)}
+.s-tab td.forte{background:var(--accent-soft)}
+.s-tab tr.fr td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
 #g-kpis{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
 .geral,.geral .panel{min-width:0}
 #g-kpis .kpi b{overflow-wrap:anywhere}
@@ -178,7 +183,18 @@ table.rec-tab{min-width:640px}
    <nav class="abas" role="tablist" aria-label="Visões do painel">
      <button role="tab" data-aba="mes" aria-selected="true">Mês a mês</button>
      <button role="tab" data-aba="geral" aria-selected="false">Estados e municípios</button>
+     <button role="tab" data-aba="saz" aria-selected="false">Meses fortes e fracos</button>
    </nav>
+   <section class="geral" id="saz" hidden>
+     <div><h2 class="sec" style="margin:0">Meses fortes e fracos</h2><div class="meta" id="s-sub"></div></div>
+     <section class="kpis" id="s-kpis" aria-label="Resumo da sazonalidade"></section>
+     <div class="grid largo" id="s-graficos"></div>
+     <section><h2 class="sec">Leituras para campanhas</h2><div class="leituras" id="s-leituras"></div></section>
+     <section style="display:flex;flex-direction:column;gap:10px"><h2 class="sec" style="margin:0">Mês a mês em cada ano</h2>
+       <div class="meta">Contratos fechados e honorários contratados em cada mês. A última coluna é o índice: 100% é um mês normal para o tamanho do escritório na época.</div>
+       <div class="tablebox"><table class="s-tab" id="s-tab"></table></div></section>
+     <div class="meta" id="s-nota"></div>
+   </section>
    <section class="geral" id="geral" hidden>
      <div class="geral-topo">
        <div><h2 class="sec" style="margin:0">Estados e municípios</h2><div class="meta">Onde o escritório fechou contratos no período: por Estado e, dentro de cada um, por município.</div></div>
@@ -650,8 +666,92 @@ const gAbertos = new Set();
 try { aba = localStorage.getItem("painel-aba") || "mes"; } catch(e) {}
 function mostrarAba(){
   document.querySelectorAll(".abas button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.aba===aba)));
+  if (!["mes","geral","saz"].includes(aba)) aba = "mes";
+  document.querySelectorAll(".abas button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.aba===aba)));
   document.getElementById("geral").hidden = aba!=="geral";
-  document.getElementById("aba-mes").hidden = aba==="geral";
+  document.getElementById("saz").hidden = aba!=="saz";
+  document.getElementById("aba-mes").hidden = aba!=="mes";
+}
+
+// ---- Aba "Meses fortes e fracos" (pedido de 05/11/2026) ---------------------
+// Índice sazonal clássico: cada mês dividido pela média móvel centrada de 12 meses
+// (tira o efeito do crescimento do escritório: 12 contratos em 2023, 190 em 2026),
+// e a mediana desse índice entre os anos para cada mês do calendário. O mês em
+// curso fica de fora, porque ainda está incompleto.
+function sazonal(serie, meses){
+  const por = {};
+  meses.forEach((k,i) => {
+    if (i<6 || i+6>=meses.length) return;
+    const jan = meses.slice(i-6, i+7);
+    const cma = (jan.slice(1,-1).reduce((s,j)=>s+serie[j],0) + (serie[jan[0]]+serie[jan[12]])/2) / 12;
+    if (cma>0) (por[+k.slice(5)] ||= []).push(serie[k]/cma);
+  });
+  const med = a => { const s=a.slice().sort((x,y)=>x-y), h=s.length>>1; return s.length%2 ? s[h] : (s[h-1]+s[h])/2; };
+  const idx = {}; for (let m=1;m<=12;m++) if (por[m]) idx[m] = {v: med(por[m]), anos: por[m].length};
+  return idx;
+}
+function barrasIndice(titulo, idx, sub){
+  const W=560,H=200,pl=8,pr=8,pt=22,pb=26, ms=[...Array(12)].map((_,i)=>i+1);
+  const vals = ms.map(m=>idx[m]?idx[m].v:1), lo=Math.min(.4,...vals), hi=Math.max(1.6,...vals);
+  const y = v => pt + (hi-v)/(hi-lo)*(H-pt-pb), y1 = y(1), bw=(W-pl-pr)/12, gap=10;
+  const bars = ms.map((m,i)=>{ const v=vals[i], x=pl+i*bw+gap/2, w=bw-gap, top=Math.min(y(v),y1), h=Math.max(Math.abs(y(v)-y1),1), cx=(x+w/2).toFixed(1);
+    const d=Math.round((v-1)*100), cor = v<1 ? "var(--warn)" : "var(--accent)";
+    return `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${cor}"><title>${MESL[m-1]}: ${d>=0?"+":""}${d}% em relação a um mês normal</title></rect>`
+      + `<text x="${cx}" y="${(v<1? y(v)+12 : y(v)-5).toFixed(1)}" text-anchor="middle" class="lbl">${d>0?"+":""}${d}%</text>`
+      + `<text x="${cx}" y="${H-8}" text-anchor="middle">${MES[m-1]}</text>`; }).join("");
+  return `<div class="panel"><h3>${titulo}</h3><div class="meta" style="margin:-6px 0 6px">${sub}</div><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${titulo}: índice por mês do ano">`
+    + `<line x1="${pl}" x2="${W-pr}" y1="${y1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="var(--muted)" stroke-dasharray="3 3"/>${bars}</svg></div>`;
+}
+function renderSaz(){
+  const hoje = new Date().toISOString().slice(0,7);
+  const todos = mesesOrd().filter(m=>m<hoje);
+  if (todos.length < 25){ document.getElementById("s-sub").textContent = "Ainda não há meses suficientes para comparar."; return; }
+  const meses = []; for (let k=todos[0]; k<=todos[todos.length-1]; k=addM(k,1)) meses.push(k);
+  const cs = contratos(ROWS), N = {}, V = {};
+  meses.forEach(k => { N[k]=0; V[k]=0; });
+  cs.forEach(r => { if (r.mes in N){ N[r.mes]++; V[r.mes]+=r.valor_total||0; } });
+  const iN = sazonal(N, meses), iV = sazonal(V, meses);
+  const pc = v => { const d=Math.round((v-1)*100); return (d>0?"+":d<0?"−":"")+Math.abs(d)+"%"; };
+  const ordN = Object.keys(iN).map(Number).sort((a,b)=>iN[a].v-iN[b].v), ordV = Object.keys(iV).map(Number).sort((a,b)=>iV[a].v-iV[b].v);
+  // fraco = abaixo de 85% nas duas medidas; forte = acima de 110% em pelo menos uma
+  const fracos = ordN.filter(m=>iN[m].v<.85 && iV[m] && iV[m].v<.85), fortes = [...new Set(ordN.slice().reverse().filter(m=>iN[m].v>1.1||iV[m].v>1.1))].sort((a,b)=>(iN[b].v+iV[b].v)-(iN[a].v+iV[a].v));
+  const nome = m => MESL[m-1].toLowerCase(), lista = a => a.length<2 ? a.map(nome).join("") : a.slice(0,-1).map(nome).join(", ")+" e "+nome(a[a.length-1]);
+  document.getElementById("s-sub").textContent = `Com base em ${cs.filter(r=>r.mes in N).length} contratos de ${rotL(meses[0]).toLowerCase()} a ${rotL(meses[meses.length-1]).toLowerCase()}, descontado o crescimento do escritório no período.`;
+  const mN = ordN[0], mV = ordV[0], xN = ordN[ordN.length-1], xV = ordV[ordV.length-1];
+  const ticket = m => { const a = cs.filter(r=>+r.mes.slice(5)===m && r.mes in N && r.valor_total!=null); return a.length ? a.reduce((s,r)=>s+r.valor_total,0)/a.length : null; };
+  document.getElementById("s-kpis").innerHTML = [
+    ["Meses mais fracos", fracos.length ? fracos.map(m=>MESL[m-1]).join(" · ") : "—", "abaixo de 85% de um mês normal em contratos e em honorários"],
+    ["Mês mais fraco em contratos", MESL[mN-1], `${pc(iN[mN].v)} de contratos em relação a um mês normal`],
+    ["Mês mais fraco em honorários", MESL[mV-1], `${pc(iV[mV].v)} de honorários em relação a um mês normal`],
+    ["Meses mais fortes", fortes.slice(0,3).map(m=>MESL[m-1]).join(" · "), `pico em contratos: ${nome(xN)} (${pc(iN[xN].v)}) · em honorários: ${nome(xV)} (${pc(iV[xV].v)})`],
+  ].map(([l,v,s])=>`<div class="kpi"><span>${l}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join("");
+  document.getElementById("s-graficos").innerHTML =
+    barrasIndice("Volume: contratos fechados", iN, "quanto cada mês fecha a mais ou a menos que um mês normal (linha tracejada)") +
+    barrasIndice("Valor: honorários contratados", iV, "o mesmo, em honorários (linha tracejada = mês normal)");
+
+  const L = [];
+  if (fracos.length) L.push(["Onde concentrar campanhas", `${lista(fracos).replace(/^./,c=>c.toUpperCase())} ${fracos.length>1?"são os meses":"é o mês"} em que o escritório costuma fechar menos, em volume e em valor. Juntos, ficam em média ${pc(fracos.reduce((s,m)=>s+iN[m].v,0)/fracos.length)} em contratos.`]);
+  const blocos = []; fracos.slice().sort((a,b)=>a-b).forEach(m => { const b=blocos[blocos.length-1]; if (b && m===b[b.length-1]+1) b.push(m); else blocos.push([m]); });
+  blocos.forEach(b => { const ini = b[0], antes = ini===1?12:ini-1;
+    L.push([`Preparar ${b.length>1?nome(b[0])+" a "+nome(b[b.length-1]):nome(ini)}`, `A campanha precisa estar no ar antes da queda: comece a gerar contatos em ${nome(antes)}, para que a negociação feche já em ${nome(ini)}.`]); });
+  if (fracos.includes(6)) L.push(["Junho e o São João", `Junho é o mês mais fraco e ${Math.round(cs.filter(r=>r.uf==="AL").length/cs.length*100)}% dos contratos são de Alagoas: as festas juninas no Nordeste devem pesar. Vale testar campanhas fora do Nordeste nesse mês, onde a data não tem o mesmo efeito.`]);
+  if (fracos.includes(12)) L.push(["Dezembro e o fim de ano", "Festas, férias e 13º salário mudam a agenda do cliente. Uma opção é antecipar as ofertas para novembro, que é um mês forte, e retomar logo em janeiro."]);
+  const tF = fracos.map(ticket).filter(Boolean), tG = cs.filter(r=>r.mes in N && r.valor_total!=null);
+  if (tF.length && tG.length){ const mf = tF.reduce((a,b)=>a+b,0)/tF.length, mg = tG.reduce((s,r)=>s+r.valor_total,0)/tG.length;
+    L.push(["Ticket nos meses fracos", `O ticket médio nos meses fracos é ${brl(mf)}, contra ${brl(mg)} no geral. ${mf<mg*0.95?"Além de fechar menos, fecha-se mais barato: campanhas de condição especial tendem a puxar ainda mais o ticket para baixo.":"O valor de cada contrato se mantém; o que cai é o número de clientes, então o foco é gerar mais contatos."}`]); }
+  if (fortes.length) L.push(["Aproveitar os meses fortes", `${lista(fortes.slice(0,3)).replace(/^./,c=>c.toUpperCase())} vendem acima do normal. Pedir indicações aos clientes fechados nesses meses ajuda a abastecer os meses fracos seguintes.`]);
+  document.getElementById("s-leituras").innerHTML = L.map(([t,x])=>`<div class="leitura"><b>${esc(t)}</b>${esc(x)}</div>`).join("");
+
+  const anos = [...new Set(meses.map(k=>k.slice(0,4)))];
+  let tab = `<thead><tr><th>Mês</th>${anos.map(a=>`<th style="text-align:right">${a}</th>`).join("")}<th style="text-align:right">Contratos</th><th style="text-align:right">Honorários</th></tr></thead><tbody>`;
+  for (let m=1;m<=12;m++){
+    const cl = v => v==null ? "" : v<.85 ? "fraco" : v>1.1 ? "forte" : "";
+    tab += `<tr class="${fracos.includes(m)?"fr":""}"><td class="nome">${MESL[m-1]}</td>` + anos.map(a=>{ const k=a+"-"+String(m).padStart(2,"0");
+      return k in N ? `<td class="num">${N[k]}<div class="meta">${brlK(V[k])}</div></td>` : `<td class="num meta">—</td>`; }).join("")
+      + `<td class="num ${cl(iN[m]&&iN[m].v)}">${iN[m]?Math.round(iN[m].v*100)+"%":"—"}</td><td class="num ${cl(iV[m]&&iV[m].v)}">${iV[m]?Math.round(iV[m].v*100)+"%":"—"}</td></tr>`;
+  }
+  document.getElementById("s-tab").innerHTML = tab + "</tbody>";
+  document.getElementById("s-nota").textContent = `Como o índice é calculado: cada mês é comparado com a média dos 12 meses ao redor dele, o que desconta o crescimento do escritório (de ${N[meses[0]]!=null?cs.filter(r=>r.mes.startsWith(meses[0].slice(0,4))).length:"—"} contratos em ${meses[0].slice(0,4)} para ${cs.filter(r=>r.mes.startsWith(meses[meses.length-1].slice(0,4))).length} em ${meses[meses.length-1].slice(0,4)}). Para cada mês do ano vale a mediana entre os anos disponíveis (2 ou 3 por mês), para que um mês atípico não distorça. ${rotL(hoje)} fica de fora por estar em curso. Com poucos anos de histórico, trate o resultado como tendência, não como regra, e confira a cada ano.`;
 }
 document.querySelectorAll(".abas button").forEach(b => b.onclick = () => { aba = b.dataset.aba; try{localStorage.setItem("painel-aba",aba)}catch(e){} mostrarAba(); window.scrollTo({top:0}); });
 document.querySelectorAll("[data-ord]").forEach(b => b.onclick = () => { gOrd = b.dataset.ord; document.querySelectorAll("[data-ord]").forEach(x=>x.setAttribute("aria-pressed", String(x===b))); renderGeral(); });
@@ -717,7 +817,7 @@ function renderGeral(){
 function render(){
   if (sel!=="todos" && !(ehAno(sel) ? mesesOrd().some(m=>m.startsWith(sel)) : mesesOrd().includes(sel))) sel = "todos";
   renderPeriodo(); renderKpis(); renderRecebidas(); renderTotal(); renderEvolucao(); renderLeituras(); renderProjecao(); renderDist(); renderTabela(); renderFontes();
-  renderGeral(); mostrarAba();
+  renderGeral(); renderSaz(); mostrarAba();
 }
 ["q","vmin","vmax"].forEach(id=>document.getElementById(id).addEventListener("input",renderTabela));
 [selA,selU,selF].forEach(s=>s.addEventListener("change",renderTabela));
