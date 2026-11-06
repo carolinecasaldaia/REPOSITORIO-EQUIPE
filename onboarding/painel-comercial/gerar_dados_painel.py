@@ -155,6 +155,46 @@ def completar_local(contratos):
             k["cidade"] = melhor[chave(k)]
 
 
+# --------------------------------------------- Pix do parceiro (Israel Correia)
+# Contratos fechados pelo parceiro não entram no Painel Comercial, mas o valor cai
+# direto nas contas do escritório por Pix ("ISRAEL C S S", pedido de 05/11/2026).
+# Ele deposita no Santander PJ, no Sicredi PJ ou no Sicredi PF. O que está lançado
+# na Conta Azul já vem na coleta; o resto vem dos extratos OFX que a equipe salva
+# em PAINEL FINANCEIRO/EXTRATOS. "ISRAEL VITOR" é cliente, não o parceiro.
+import re as _re
+PARCEIRO = _re.compile(r"\bISRAEL\s+C(?:ORREIA)?\b(?!\w)|\bISRAEL\s+C\s+S\s+S\b", _re.I)
+EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
+BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi"}
+
+
+def pix_parceiro_extratos():
+    """(data AAAA-MM-DD, centavos, conta) de cada crédito do parceiro nos .ofx da pasta EXTRATOS."""
+    achados, vistos = [], set()
+    for arq in sorted(EXTRATOS.glob("**/*")) if EXTRATOS.is_dir() else []:
+        if arq.suffix.lower() != ".ofx":
+            continue
+        try:
+            txt = arq.read_bytes().decode("latin-1")
+            banco = (_re.search(r"<BANKID>\s*(\d+)", txt) or [None, ""])[1]
+            conta = BANCOS.get(banco, "Banco %s" % banco if banco else "Extrato") + " · " + arq.stem
+            for t in _re.findall(r"<STMTTRN>(.*?)(?:</STMTTRN>|(?=<STMTTRN>)|</BANKTRANLIST>)", txt, _re.S | _re.I):
+                campo = lambda n: (_re.search(r"<%s>\s*([^<\r\n]*)" % n, t, _re.I) or [None, ""])[1].strip()
+                valor = float(campo("TRNAMT").replace(",", ".") or 0)
+                texto = campo("NAME") + " " + campo("MEMO")
+                if valor <= 0 or not PARCEIRO.search(texto):
+                    continue
+                d = campo("DTPOSTED")[:8]
+                data = "%s-%s-%s" % (d[:4], d[4:6], d[6:8])
+                chave = (data, round(valor * 100), campo("FITID") or texto)
+                if chave in vistos:          # mesmo lançamento em dois extratos
+                    continue
+                vistos.add(chave)
+                achados.append((data, round(valor * 100), conta))
+        except Exception:
+            print("%s: extrato não lido\n%s" % (arq.name, traceback.format_exc()))
+    return achados
+
+
 def recebimentos():
     """Parcelas de honorários recebidas em cada mês, separadas pelo vencimento.
 
@@ -170,24 +210,30 @@ def recebimentos():
       adiantadas  paga antes do mês do vencimento    (origem = mês do vencimento)
     """
     saida = {}
+    extrato = pix_parceiro_extratos()
     for f in sorted(FINANCEIRO.glob("financeiro_*.json")):
         try:
             d = json.loads(f.read_text(encoding="utf-8"))
             mes = d["mes"]
-            # entradas e outros (Pix avulso/parceiro) entram só no "Total recebido
+            # entradas, parceiros e outros (Pix avulso) entram só no "Total recebido
             # no mês" (pedido de 05/11/2026); fonte = recebido por sistema.
             grupos = {g: {"v": 0, "n": 0, "origem": {}, "itens": []}
-                      for g in ("do_mes", "atrasadas", "adiantadas", "entradas", "outros")}
-            fonte = {"AS": 0, "CA": 0}
+                      for g in ("do_mes", "atrasadas", "adiantadas", "entradas", "parceiros", "outros")}
+            fonte = {"AS": 0, "CA": 0, "EXT": 0}
+            vistos = set()          # (data, centavos) dos Pix do parceiro já contados
             for linha in d.get("linhas", []):
                 c = linha.split("|")
                 if len(c) < 10 or "r" not in c[9]:
                     continue
                 fonte[c[0]] = fonte.get(c[0], 0) + int(c[2])
                 if c[3] != "H":
-                    g = grupos["entradas" if c[3] == "E" else "outros"]
+                    parceiro = c[3] == "X" and PARCEIRO.search(c[1])
+                    g = grupos["entradas" if c[3] == "E" else "parceiros" if parceiro else "outros"]
                     g["v"] += int(c[2])
                     g["n"] += 1
+                    if parceiro:
+                        vistos.add((c[8] or c[6], int(c[2]), len(vistos)))
+                        g["itens"].append([c[8] or c[6], round(int(c[2]) / 100, 2), "Conta Azul"])
                     continue
                 # Atraso é medido pelo dia em que o cliente pagou, não pelo crédito:
                 # cartão pago no vencimento (15/09) cai na conta só em outubro e
@@ -200,10 +246,26 @@ def recebimentos():
                 g["origem"][venc] = g["origem"].get(venc, 0) + cent
                 if g is not grupos["do_mes"]:
                     g["itens"].append([c[1], round(cent / 100, 2), c[6], c[8], c[0]])
+            # Pix do parceiro que só está no extrato do banco (conta fora da Conta
+            # Azul, como a PF do Sicredi, ou ainda não conciliado lá).
+            for data, cent, conta in extrato:
+                if data[:7] != mes:
+                    continue
+                # já lançado na Conta Azul: mesmo valor, até 3 dias de diferença na data
+                dup = next((v for v in vistos if v[1] == cent and abs(
+                    (date.fromisoformat(v[0][:10]) - date.fromisoformat(data)).days) <= 3), None)
+                if dup:
+                    vistos.discard(dup)
+                    continue
+                g = grupos["parceiros"]
+                g["v"] += cent
+                g["n"] += 1
+                g["itens"].append([data, round(cent / 100, 2), conta])
+                fonte["EXT"] += cent
             for g in grupos.values():
                 g["v"] = round(g["v"] / 100, 2)
                 g["origem"] = {k: round(v / 100, 2) for k, v in sorted(g["origem"].items())}
-                g["itens"].sort(key=lambda x: (x[2], x[0]))
+                g["itens"].sort(key=lambda x: (x[0], str(x[2])) if len(x) == 3 else (x[2], x[0]))
             grupos["fonte"] = {k: round(v / 100, 2) for k, v in fonte.items()}
             grupos["atualizado_em"] = d.get("atualizado_em")
             saida[mes] = grupos

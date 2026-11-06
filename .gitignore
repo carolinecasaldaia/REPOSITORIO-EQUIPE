@@ -73,3 +73,7 @@ node_modules/
 *.swp
 ~$*
 Thumbs.db
+
+# Extratos bancários (dados financeiros do escritório)
+*.ofx
+*.OFX

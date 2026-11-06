@@ -1,0 +1,20 @@
+EXTRATOS BANCÁRIOS — Pix do parceiro (Israel Correia)
+
+Para que todos os depósitos do Israel entrem no "Total recebido no mês" do
+Painel Comercial, salve aqui, uma vez por mês, o extrato em formato OFX de cada
+conta onde ele deposita:
+
+  - Santander PJ
+  - Sicredi PJ
+  - Sicredi PF
+
+Como baixar: no internet banking, Extrato > escolha o período (o mês inteiro) >
+Exportar / Salvar como OFX (às vezes aparece como "Money" ou "OFX").
+Dê um nome que diga a conta e o mês, por exemplo:
+  santander-pj-2026-10.ofx    sicredi-pj-2026-10.ofx    sicredi-pf-2026-10.ofx
+
+O painel lê só os créditos de Pix do Israel ("ISRAEL C S S" / "ISRAEL CORREIA");
+os demais lançamentos do extrato são ignorados e não aparecem em lugar nenhum.
+Se o mesmo Pix também estiver lançado na Conta Azul, ele é contado uma vez só.
+Pode salvar extratos com períodos que se sobrepõem: lançamentos repetidos são
+descartados. A atualização é automática, de hora em hora.
