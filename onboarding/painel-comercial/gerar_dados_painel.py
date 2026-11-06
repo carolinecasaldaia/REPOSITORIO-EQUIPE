@@ -82,11 +82,20 @@ def recebimentos():
         try:
             d = json.loads(f.read_text(encoding="utf-8"))
             mes = d["mes"]
+            # entradas e outros (Pix avulso/parceiro) entram só no "Total recebido
+            # no mês" (pedido de 05/11/2026); fonte = recebido por sistema.
             grupos = {g: {"v": 0, "n": 0, "origem": {}, "itens": []}
-                      for g in ("do_mes", "atrasadas", "adiantadas")}
+                      for g in ("do_mes", "atrasadas", "adiantadas", "entradas", "outros")}
+            fonte = {"AS": 0, "CA": 0}
             for linha in d.get("linhas", []):
                 c = linha.split("|")
-                if len(c) < 10 or c[3] != "H" or "r" not in c[9]:
+                if len(c) < 10 or "r" not in c[9]:
+                    continue
+                fonte[c[0]] = fonte.get(c[0], 0) + int(c[2])
+                if c[3] != "H":
+                    g = grupos["entradas" if c[3] == "E" else "outros"]
+                    g["v"] += int(c[2])
+                    g["n"] += 1
                     continue
                 # Atraso é medido pelo dia em que o cliente pagou, não pelo crédito:
                 # cartão pago no vencimento (15/09) cai na conta só em outubro e
@@ -103,6 +112,7 @@ def recebimentos():
                 g["v"] = round(g["v"] / 100, 2)
                 g["origem"] = {k: round(v / 100, 2) for k, v in sorted(g["origem"].items())}
                 g["itens"].sort(key=lambda x: (x[2], x[0]))
+            grupos["fonte"] = {k: round(v / 100, 2) for k, v in fonte.items()}
             grupos["atualizado_em"] = d.get("atualizado_em")
             saida[mes] = grupos
         except Exception:
