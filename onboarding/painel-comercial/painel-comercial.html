@@ -98,6 +98,47 @@ tfoot td{font-weight:600;border-bottom:none}
 .fontes{display:flex;flex-wrap:wrap;gap:8px}
 /* Parcelas recebidas: total, do mês, atrasadas, adiantadas */
 .kpis[hidden]{display:none}
+/* Abas e visão "Estados e municípios" */
+.abas{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:22px;overflow-x:auto}
+.abas button{font:inherit;font-weight:500;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 14px;cursor:pointer;white-space:nowrap;margin-bottom:-1px}
+.abas button:hover{color:var(--ink)}
+.abas button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.geral{display:flex;flex-direction:column;gap:20px}
+#g-kpis{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}
+.geral,.geral .panel{min-width:0}
+#g-kpis .kpi b{overflow-wrap:anywhere}
+.geral[hidden],.layout[hidden]{display:none}
+.geral-topo,.g-cab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 20px}
+.anos{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.anos button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 13px;cursor:pointer}
+.anos button:hover{border-color:var(--accent)}
+.anos button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.uf{border-top:1px solid var(--line)}
+.uf:first-child{border-top:0}
+.uf summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:26px minmax(130px,1.1fr) minmax(80px,2fr) 62px 54px 118px 96px;gap:12px;align-items:center;padding:10px 4px;font-size:13px}
+.uf summary::-webkit-details-marker{display:none}
+.uf summary:hover{background:var(--accent-soft)}
+.uf summary .pos{font-family:var(--mono);color:var(--muted);font-size:12px}
+.uf summary .nm b{font-weight:600}
+.uf summary .nm small{display:block;color:var(--muted);font-size:11.5px}
+.uf summary .nm::before{content:"▸ ";color:var(--muted)}
+.uf[open] summary .nm::before{content:"▾ "}
+.uf .tr{background:var(--neutral-soft);height:11px;border-radius:3px;overflow:hidden}
+.uf .fi{background:var(--accent);height:100%;display:block;border-radius:0 3px 3px 0}
+.uf .num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.uf .mu{color:var(--muted)}
+.uf .cidades{padding:2px 4px 14px 38px}
+.uf .cidades table{min-width:0;font-size:12.5px}
+.uf .cidades td,.uf .cidades th{padding:6px 10px}
+.uf .cidades .sem td{color:var(--muted);font-style:italic}
+.g-cab-l{display:grid;grid-template-columns:26px minmax(130px,1.1fr) minmax(80px,2fr) 62px 54px 118px 96px;gap:12px;padding:0 4px 6px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+.g-cab-l span:nth-child(n+4){text-align:right}
+@media (max-width:760px){
+  .uf summary,.g-cab-l{grid-template-columns:20px minmax(0,1fr) 34px auto;gap:8px}
+  .uf summary .num{font-size:12px}
+  .uf summary .bar-c,.uf summary .pct,.uf summary .tk,.g-cab-l .bar-c,.g-cab-l .pct,.g-cab-l .tk{display:none}
+  .uf .cidades{padding-left:8px}
+}
 /* Total recebido no mês */
 .total{display:flex;flex-direction:column;gap:14px}
 .total[hidden]{display:none}
@@ -134,7 +175,25 @@ table.rec-tab{min-width:640px}
   </header>
 
   <div id="app" hidden>
-   <div class="layout">
+   <nav class="abas" role="tablist" aria-label="Visões do painel">
+     <button role="tab" data-aba="mes" aria-selected="true">Mês a mês</button>
+     <button role="tab" data-aba="geral" aria-selected="false">Estados e municípios</button>
+   </nav>
+   <section class="geral" id="geral" hidden>
+     <div class="geral-topo">
+       <div><h2 class="sec" style="margin:0">Estados e municípios</h2><div class="meta">Onde o escritório fechou contratos no período: por Estado e, dentro de cada um, por município.</div></div>
+       <div class="anos" id="g-anos" role="group" aria-label="Período"></div>
+     </div>
+     <section class="kpis" id="g-kpis" aria-label="Resumo por local"></section>
+     <div class="panel">
+       <div class="g-cab"><h3 style="margin:0">Contratos por Estado</h3>
+         <div class="anos" role="group" aria-label="Ordenar por"><span class="meta">Ordenar por</span><button data-ord="n" aria-pressed="true">Contratos</button><button data-ord="tot" aria-pressed="false">Honorários</button></div></div>
+       <div class="meta" style="margin:4px 0 10px">Clique num Estado para ver os municípios.</div>
+       <div id="g-estados"></div>
+     </div>
+     <div class="meta" id="g-nota"></div>
+   </section>
+   <div class="layout" id="aba-mes">
     <aside class="lateral">
       <h2>Meses</h2>
       <nav class="periodo" id="periodo" aria-label="Meses"></nav>
@@ -581,9 +640,84 @@ function renderFontes(){
     const cls = /conferid/.test(g.st) ? "p-ok" : g.st==="prévia"||g.st==="não conferido" ? "p-warn" : "p-n";
     return `<span class="pill ${cls}">${rot(g.ini)}${g.fim!==g.ini?" a "+rot(g.fim):""}: ${g.st}</span>`; }).join("");
 }
+// ---- Aba "Estados e municípios" (pedido de 05/11/2026) ------------------------
+// Contratos do ano por Estado e, dentro de cada um, por município. A cidade vem do
+// contrato assinado (ago/2026 em diante) ou, na falta, do cadastro do cliente no
+// ASAAS (cidade_fonte), completada em gerar_dados_painel.py.
+const UFN = {AC:"Acre",AL:"Alagoas",AP:"Amapá",AM:"Amazonas",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",MT:"Mato Grosso",MS:"Mato Grosso do Sul",MG:"Minas Gerais",PA:"Pará",PB:"Paraíba",PR:"Paraná",PE:"Pernambuco",PI:"Piauí",RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RS:"Rio Grande do Sul",RO:"Rondônia",RR:"Roraima",SC:"Santa Catarina",SP:"São Paulo",SE:"Sergipe",TO:"Tocantins"};
+let aba = "mes", gAno = null, gOrd = "n";
+const gAbertos = new Set();
+try { aba = localStorage.getItem("painel-aba") || "mes"; } catch(e) {}
+function mostrarAba(){
+  document.querySelectorAll(".abas button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.aba===aba)));
+  document.getElementById("geral").hidden = aba!=="geral";
+  document.getElementById("aba-mes").hidden = aba==="geral";
+}
+document.querySelectorAll(".abas button").forEach(b => b.onclick = () => { aba = b.dataset.aba; try{localStorage.setItem("painel-aba",aba)}catch(e){} mostrarAba(); window.scrollTo({top:0}); });
+document.querySelectorAll("[data-ord]").forEach(b => b.onclick = () => { gOrd = b.dataset.ord; document.querySelectorAll("[data-ord]").forEach(x=>x.setAttribute("aria-pressed", String(x===b))); renderGeral(); });
+function agrupar(cs, chave){
+  const m = new Map();
+  cs.forEach(r => { const k = chave(r); const o = m.get(k) || {k, n:0, tot:0, nT:0, rows:[]}; o.n++; if (r.valor_total!=null){ o.tot += r.valor_total; o.nT++; } o.rows.push(r); m.set(k, o); });
+  return [...m.values()];
+}
+function renderGeral(){
+  const anos = [...new Set(mesesOrd().map(m=>m.slice(0,4)))].sort().reverse();
+  if (!gAno || (gAno!=="todos" && !anos.includes(gAno))) gAno = anos[0];
+  const chips = document.getElementById("g-anos");
+  chips.innerHTML = anos.concat("todos").map(a => `<button data-a="${a}" aria-pressed="${gAno===a}">${a==="todos"?"Todos os anos":a}</button>`).join("");
+  chips.querySelectorAll("button").forEach(b => b.onclick = () => { gAno = b.dataset.a; renderGeral(); });
+
+  const cs = contratos(gAno==="todos" ? ROWS : ROWS.filter(r=>r.mes.startsWith(gAno)));
+  const ord = (a,b) => (a.k==null) - (b.k==null) || (b[gOrd]-a[gOrd]) || (b.n-a.n) || String(a.k).localeCompare(String(b.k),"pt-BR");
+  const ufs = agrupar(cs, r=>r.uf||null).sort(ord);
+  const comUf = ufs.filter(u=>u.k), tot = cs.reduce((s,r)=>s+(r.valor_total||0),0);
+  const munis = new Set(cs.filter(r=>r.uf&&r.cidade).map(r=>r.uf+"|"+r.cidade));
+  const pct = (v,t) => t ? (v/t*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%" : "—";
+  const nomeUf = k => k ? (UFN[k]||k) : "Estado não informado";
+  const topN = comUf.slice().sort((a,b)=>b.n-a.n||b.tot-a.tot)[0], topV = comUf.slice().sort((a,b)=>b.tot-a.tot)[0];
+  const topC = agrupar(cs.filter(r=>r.uf&&r.cidade), r=>r.cidade+"|"+r.uf).sort((a,b)=>b.n-a.n||b.tot-a.tot)[0];
+  const periodo = gAno==="todos" ? "em todos os anos" : "em " + gAno;
+  document.getElementById("g-kpis").innerHTML = [
+    ["Contratos fechados", cs.length, periodo],
+    ["Honorários contratados", brl(tot), cs.length ? `ticket médio ${brl(tot/cs.filter(r=>r.valor_total!=null).length)}` : ""],
+    ["Estados atendidos", comUf.length, comUf.map(u=>u.k).sort().join(" · ")],
+    ["Municípios atendidos", munis.size, "com município identificado"],
+    ["Estado que mais comprou", topN ? nomeUf(topN.k) : "—", topN ? `${topN.n} contratos · ${pct(topN.n, cs.length)} do total` + (topV && topV.k!==topN.k ? ` · em honorários: ${nomeUf(topV.k)}` : ` · ${brl(topN.tot)}`) : ""],
+    ["Município que mais comprou", topC ? topC.k.split("|")[0] : "—", topC ? `${topC.k.split("|")[1]} · ${topC.n} contratos · ${brl(topC.tot)}` : ""],
+  ].map(([l,v,s])=>`<div class="kpi"><span>${l}</span><b>${esc(v)}</b><small>${esc(s)}</small></div>`).join("");
+
+  const max = Math.max(1, ...ufs.map(u=>u[gOrd]));
+  const linha = (u,i) => {
+    const cids = agrupar(u.rows.filter(r=>r.cidade), r=>r.cidade).sort((a,b)=>(b[gOrd]-a[gOrd])||(b.n-a.n));
+    const sem = u.rows.filter(r=>!r.cidade);
+    const tab = `<table><thead><tr><th>Município</th><th style="text-align:right">Contratos</th><th style="text-align:right">% do Estado</th><th style="text-align:right">Honorários</th><th style="text-align:right">Ticket médio</th></tr></thead><tbody>`
+      + cids.map(c=>`<tr><td class="nome">${esc(c.k)}</td><td class="num">${c.n}</td><td class="num">${pct(c.n,u.n)}</td><td class="num">${brl(c.tot)}</td><td class="num">${c.nT?brl(c.tot/c.nT):"—"}</td></tr>`).join("")
+      + (sem.length ? `<tr class="sem"><td>Município não informado</td><td class="num">${sem.length}</td><td class="num">${pct(sem.length,u.n)}</td><td class="num">${brl(sem.reduce((s,r)=>s+(r.valor_total||0),0))}</td><td class="num"></td></tr>` : "")
+      + `</tbody></table>`;
+    const key = String(u.k);
+    return `<details class="uf" data-k="${esc(key)}" ${gAbertos.has(key)?"open":""}><summary>
+      <span class="pos">${u.k?i+1:"—"}</span>
+      <span class="nm"><b>${esc(nomeUf(u.k))}</b><small>${u.k?u.k+" · ":""}${cids.length} ${cids.length===1?"município":"municípios"}</small></span>
+      <span class="bar-c"><span class="tr" style="display:block"><span class="fi" style="width:${100*u[gOrd]/max}%"></span></span></span>
+      <span class="num">${u.n}</span><span class="num mu pct">${pct(u.n, cs.length)}</span>
+      <span class="num">${brl(u.tot)}</span><span class="num mu tk">${u.nT?brl(u.tot/u.nT):"—"}</span>
+    </summary><div class="cidades"><div class="tablebox">${tab}</div></div></details>`;
+  };
+  document.getElementById("g-estados").innerHTML = cs.length
+    ? `<div class="g-cab-l"><span>#</span><span>Estado</span><span class="bar-c"></span><span>Contratos</span><span class="pct">%</span><span>Honorários</span><span class="tk">Ticket médio</span></div>` + ufs.map(linha).join("")
+    : '<div class="meta">Sem contratos no período.</div>';
+  document.querySelectorAll("#g-estados details").forEach(d => d.addEventListener("toggle", () => { d.open ? gAbertos.add(d.dataset.k) : gAbertos.delete(d.dataset.k); }));
+
+  const fC = cs.filter(r=>r.cidade && r.cidade_fonte==="contrato").length, fA = cs.filter(r=>r.cidade && r.cidade_fonte==="asaas").length;
+  const semC = cs.filter(r=>!r.cidade).length, ufA = cs.filter(r=>r.uf_fonte==="asaas").length;
+  document.getElementById("g-nota").textContent = !cs.some(r=>"cidade_fonte" in r)
+    ? "Os municípios aparecem quando o painel lê o arquivo do Google Drive."
+    : `De onde vem o município: ${fC} contratos pelo contrato assinado (agosto de 2026 em diante) e ${fA} pelo endereço do cliente no cadastro do ASAAS, usado só quando o Estado do cadastro bate com o do contrato. ${semC} ${semC===1?"contrato fica":"contratos ficam"} sem município identificado${ufA?`; o Estado de ${ufA} veio do ASAAS porque o contrato não o trazia`:""}. Antes de 2025 há poucos municípios porque as planilhas daquela época não registravam a cidade e muitos desses clientes não têm endereço no ASAAS.`;
+}
 function render(){
   if (sel!=="todos" && !(ehAno(sel) ? mesesOrd().some(m=>m.startsWith(sel)) : mesesOrd().includes(sel))) sel = "todos";
   renderPeriodo(); renderKpis(); renderRecebidas(); renderTotal(); renderEvolucao(); renderLeituras(); renderProjecao(); renderDist(); renderTabela(); renderFontes();
+  renderGeral(); mostrarAba();
 }
 ["q","vmin","vmax"].forEach(id=>document.getElementById(id).addEventListener("input",renderTabela));
 [selA,selU,selF].forEach(s=>s.addEventListener("change",renderTabela));
