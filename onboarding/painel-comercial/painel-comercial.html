@@ -285,7 +285,7 @@ table.rec-tab{min-width:640px}
       <div class="foot">
         <div><b>De onde vêm os números.</b> Honorários, entrada e parcelamento saem da Cláusula 2ª do Contrato HO Assinado de cada pasta marcada “OK” em Preparação para Ingresso. “Pago no Asaas” é o que teve baixa lá; entrada paga por Conta Azul ou por fora não aparece nessa coluna. Junho e julho de 2026 vêm das planilhas “DADOS CONTRATOS” já conferidas; fevereiro de 2023 a maio de 2026, da planilha “DADOS CONTRATOS - CONSOLIDADO 2023-2026”.</div>
         <div><b>Entradas.</b> Até julho de 2026 vale o caixa de entradas registrado nas planilhas. Nos outros meses, a entrada é a do mês: parte de entrada dividida que caiu em outro mês sai, e parte de contrato antigo paga no mês entra, marcada “contrato de outro mês”. Esse contrato não conta em honorários nem na quantidade.</div>
-        <div><b>Parcelas recebidas.</b> Vêm da coleta diária do Painel Financeiro (ASAAS pela data de crédito; Conta Azul pelo extrato), com o mesmo critério de “recebido no mês” de lá. Cada parcela que entrou no mês é separada pelo dia em que o cliente pagou, comparado com o vencimento: em dia (pagou no mês do vencimento), atrasada (pagou em mês posterior) ou adiantada (pagou antes do mês do vencimento). Cartão pago em dia no fim de um mês e creditado só no seguinte conta como em dia. Os valores incluem juros de atraso. A coleta começa em janeiro de 2026.</div>
+        <div><b>Parcelas recebidas.</b> Vêm da coleta diária do Painel Financeiro (ASAAS pela data de crédito; Conta Azul pelo extrato), com o mesmo critério de “recebido no mês” de lá. Cada parcela que entrou no mês é separada pelo dia em que o cliente pagou, comparado com o vencimento: em dia (pagou no mês do vencimento), atrasada (pagou em mês posterior) ou adiantada (pagou antes do mês do vencimento). Cartão pago em dia no fim de um mês e creditado só no seguinte conta como em dia. Os valores incluem juros de atraso. Em 2025 entram também os recebimentos do Financeiro do Astrea, usado antes do ASAAS.</div>
         <div class="fontes" id="fontes"></div>
       </div>
     </div>
@@ -465,13 +465,13 @@ function renderTotal(){
   else if (!um) comp = ` <span class="meta">média de ${brl(tot/ms.length)} por mês</span>`;
   const vis = soma.filter(g => g.v || g.k!=="outros");
   box.innerHTML = `<div class="topo"><div><span>${rotulo}</span><b>${brl(tot)}</b><div class="meta">${nTot} pagamentos${comp}</div></div>
-      <div class="fontes-t">ASAAS ${brl(fonte("AS"))}<br>Conta Azul ${brl(fonte("CA"))}${fonte("EXT")?`<br>Extratos bancários ${brl(fonte("EXT"))}`:""}</div></div>
+      <div class="fontes-t">ASAAS ${brl(fonte("AS"))}<br>Conta Azul ${brl(fonte("CA"))}${fonte("AT")?`<br>Astrea ${brl(fonte("AT"))}`:""}${fonte("EXT")?`<br>Extratos bancários ${brl(fonte("EXT"))}`:""}</div></div>
     <div class="compo" role="img" aria-label="Composição do total recebido">${vis.filter(g=>g.v>0).map(g=>`<i style="background:${g.cor};flex:${g.v}" title="${g.nome}: ${brl(g.v)} (${pct(g.v)})"></i>`).join("")}</div>
     <div class="partes">${vis.map(g=>`<i style="background:${g.cor}"></i><span>${g.nome}</span><span class="m">${g.n} pag.</span><span class="m">${pct(g.v)}</span><span class="v">${brl(g.v)}</span>`).join("")}
       <span class="soma"></span><span class="soma">Total</span><span class="soma m">${nTot} pag.</span><span class="soma m">100%</span><span class="soma v">${brl(tot)}</span></div>`
     + (() => { const it = ms.flatMap(m => ((REC[m].parceiros||{}).itens||[]).map(i => ({m, data:i[0], v:i[1], conta:i[2]}))).sort((a,b)=>a.data<b.data?1:-1);
         return it.length ? `<details class="rec-det"><summary>Ver os ${it.length} depósitos do parceiro (Israel Correia)</summary><div class="tablebox"><table class="rec-tab" style="min-width:420px"><thead><tr><th>Data</th><th style="text-align:right">Valor</th><th>Onde caiu</th></tr></thead><tbody>${it.map(i=>`<tr><td>${dataBR(i.data)}</td><td class="num">${brl(i.v)}</td><td>${esc(i.conta)}</td></tr>`).join("")}</tbody></table></div></details>` : ""; })();
-  nota.textContent = "Tudo o que entrou no período pelo ASAAS (data de crédito) e pela Conta Azul (data de pagamento), o mesmo “recebido” do Painel Financeiro. A entrada aqui é a que caiu na conta; o card Entradas, acima, é a combinada nos contratos do mês. Parceiros: Pix do Israel Correia (contratos fechados por ele, que não entram nos contratos deste painel), lidos da Conta Azul e dos extratos OFX salvos em PAINEL FINANCEIRO/EXTRATOS (Santander PJ, Sicredi PJ e Sicredi PF), sem contar duas vezes o mesmo Pix. Mês sem extrato salvo pode ter depósito do parceiro ainda não contado.";
+  nota.textContent = "Tudo o que entrou no período pelo ASAAS (data de crédito) e pela Conta Azul (data de pagamento), o mesmo “recebido” do Painel Financeiro. Em 2025, antes do ASAAS (ago/2025), as parcelas vêm do Financeiro do Astrea (boletos PJBank e baixas lançadas lá, pela data de pagamento). A entrada aqui é a que caiu na conta; o card Entradas, acima, é a combinada nos contratos do mês. Parceiros: Pix do Israel Correia (contratos fechados por ele, que não entram nos contratos deste painel), lidos da Conta Azul e dos extratos (PDF ou OFX) salvos em PAINEL FINANCEIRO/EXTRATOS (Santander, Sicredi, C6 e Mercado Pago), sem contar duas vezes o mesmo Pix. Mês sem extrato salvo pode ter depósito do parceiro ainda não contado.";
 }
 const dataBR = s => s ? s.slice(0,10).split("-").reverse().join("/") : "—";
 function recPeriodo(){
@@ -523,7 +523,7 @@ function renderRecebidas(){
   box.innerHTML = cards.map(([c,l,v,s])=>`<div class="kpi" style="--sw:${c}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join("");
 
   const hoje = new Date().toISOString().slice(0,7), at = um && REC[mes].atualizado_em;
-  nota.textContent = "Parcelas de honorários com crédito no ASAAS ou na Conta Azul no período, separadas pelo dia em que o cliente pagou comparado com o vencimento. A entrada dos contratos fica no card Entradas; Pix avulso e de parceiro ficam de fora."
+  nota.textContent = "Parcelas de honorários com crédito no ASAAS, na Conta Azul ou (2025) no Astrea no período, separadas pelo dia em que o cliente pagou comparado com o vencimento. A entrada dos contratos fica no card Entradas; Pix avulso e de parceiro ficam de fora."
     + (um && mes===hoje ? " Mês em curso." : "") + (at ? ` Coleta de ${dataBR(at)} às ${at.slice(11,16)}.` : "");
 
   const itens = g.atrasadas.itens.concat(g.adiantadas.itens).sort((a,b)=> a.mes<b.mes?1:a.mes>b.mes?-1: a.tipo<b.tipo?1:a.tipo>b.tipo?-1: a.venc<b.venc?-1:1);
@@ -532,7 +532,7 @@ function renderRecebidas(){
     document.getElementById("rec-sum").textContent = `Ver as ${itens.length} parcelas atrasadas e adiantadas, cliente a cliente`;
     document.getElementById("rec-tb").innerHTML = itens.map(i => `<tr><td class="nome">${esc(title(i.cli))}${um?"":` <span class="meta">· paga em ${rot(i.mes)}</span>`}</td>
       <td>${i.tipo==="atrasadas"?'<span class="pill p-warn">Atrasada</span>':'<span class="pill p-n">Adiantada</span>'}</td>
-      <td>${dataBR(i.venc)}</td><td>${dataBR(i.pago)}</td><td class="num">${brl(i.v)}</td><td>${i.src==="CA"?"Conta Azul":"ASAAS"}</td></tr>`).join("");
+      <td>${dataBR(i.venc)}</td><td>${dataBR(i.pago)}</td><td class="num">${brl(i.v)}</td><td>${i.src==="CA"?"Conta Azul":i.src==="AT"?"Astrea":"ASAAS"}</td></tr>`).join("");
   }
 }
 function miniEmpilhado(titulo, ms, grupos){

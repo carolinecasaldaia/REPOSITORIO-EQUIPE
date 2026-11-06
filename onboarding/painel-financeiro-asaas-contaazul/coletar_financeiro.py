@@ -147,13 +147,17 @@ def valores_entrada(c):
     return vals or ([c["entrada"]] if c.get("entrada") else [])
 
 
-def linhas_conta_azul(mes, hoje, avisos):
-    arq = DADOS / ("ca_%s.txt" % mes)
+def linhas_conta_azul(mes, hoje, avisos, src="CA"):
+    """src "CA": Conta Azul (dados/ca_<mes>.txt, coleta diária pelo Chrome).
+    src "AT": Financeiro do Astrea (dados/at_<mes>.txt, coletar_astrea.py; só
+    recebidos, usado em 2025, antes do ASAAS). Mesmo formato de linha."""
+    arq = DADOS / ("%s_%s.txt" % (src.lower(), mes))
     if not arq.exists():
-        avisos.append("Conta Azul não coletado para %s (falta %s)." % (mes, arq.name))
+        if src == "CA":
+            avisos.append("Conta Azul não coletado para %s (falta %s)." % (mes, arq.name))
         return []
     coletado = datetime.fromtimestamp(arq.stat().st_mtime).date().isoformat()
-    if coletado < hoje:     # o Chrome não respondeu hoje: vale a última coleta, com aviso
+    if src == "CA" and coletado < hoje:     # o Chrome não respondeu hoje: vale a última coleta, com aviso
         avisos.append("Conta Azul da coleta de %s (o de hoje ainda não foi coletado pelo Chrome)."
                       % "/".join(reversed(coletado.split("-"))))
     do_mes, do_anterior = contratos(mes), contratos(anterior(mes))
@@ -167,7 +171,7 @@ def linhas_conta_azul(mes, hoje, avisos):
             continue
         if cat == "--" and parc == "PX":      # avulso sem categoria: transferência, estorno, rendimento
             continue
-        tipo = "X" if cat == "PA" else "H"
+        tipo = "X" if cat == "PA" else "E" if parc == "EN" else "H"
         if tipo == "H" and "r" in fl:
             for lista, outro in ((do_mes, False), (do_anterior, True)):
                 for k in lista:
@@ -185,7 +189,7 @@ def linhas_conta_azul(mes, hoje, avisos):
                     break
         if st == "P" and venc < hoje:
             st = "V"
-        saida.append(["CA", n, c, tipo, cat if cat in ("RV", "BA", "CV", "PA") else "--",
+        saida.append([src, n, c, tipo, cat if cat in ("RV", "BA", "CV", "PA") else "--",
                       forma, venc, st, pago, fl, parc])
     return saida
 
@@ -260,7 +264,8 @@ def coletar(mes):
     DADOS.mkdir(exist_ok=True)
     hoje = date.today().isoformat()
     avisos = []
-    linhas = linhas_asaas(mes, hoje) + linhas_conta_azul(mes, hoje, avisos)
+    linhas = (linhas_asaas(mes, hoje) + linhas_conta_azul(mes, hoje, avisos)
+              + linhas_conta_azul(mes, hoje, avisos, "AT"))
     k = contratos(mes)
     marcar_avista(linhas, k)
     marcar_fechamento(linhas, mes)
