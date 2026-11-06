@@ -365,6 +365,13 @@ function renderTotal(){
   const box = document.getElementById("total-box"), nota = document.getElementById("total-nota");
   const ms = recMeses();
   if (!ms.length){ box.hidden = true; nota.textContent = document.getElementById("rec-nota").textContent; return; }
+  // Arquivo do Drive de antes de 05/11/2026 21h (sem entradas nem fonte): o total sairia só com as
+  // parcelas. Melhor avisar do que mostrar um total incompleto.
+  if (ms.some(m => !REC[m].entradas || !REC[m].fonte)){
+    box.hidden = true;
+    nota.textContent = "O arquivo de dados que chegou do Google Drive ainda é da versão anterior, sem as entradas. Recarregue a página em alguns minutos para ver o total recebido completo.";
+    return;
+  }
   box.hidden = false;
   const um = ms.length===1, mes = um ? ms[0] : null, hoje = new Date().toISOString().slice(0,7);
   const soma = TOTAL_GRUPOS.map(g => ({...g, v: ms.reduce((s,m)=>s+((REC[m][g.k]||{}).v||0),0), n: ms.reduce((s,m)=>s+((REC[m][g.k]||{}).n||0),0)}));
