@@ -21,7 +21,11 @@ import unicodedata
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-PLANILHA = AQUI.parent.parent / "DADOS CONTRATOS - CONSOLIDADO 2023-2026.csv"
+# Raiz "Documentos Escritório " (acento pode vir decomposto): os caminhos valem onde
+# quer que esta pasta esteja (PAINEL COMERCIAL foi para EMPRESA/FINANCEIRO em 06/11/2026).
+DOC = next(p for p in Path(__file__).resolve().parents if p.name.startswith("Documentos Escrit"))
+ONBOARDING = DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING"
+PLANILHA = ONBOARDING.parent / "DADOS CONTRATOS - CONSOLIDADO 2023-2026.csv"
 ATE = "2026-06"            # exclusivo
 MESES = ("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho",
          "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro")

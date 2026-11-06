@@ -10,7 +10,7 @@ nenhum dado de cliente entra aqui (veja `.gitignore`).
 | `onboarding/baixar-autentique` | Baixa contratos assinados do Autentique | `…/ONBOARDING/BAIXAR AUTENTIQUE` |
 | `onboarding/separador-autentique` | Separa os documentos do Autentique | `…/ONBOARDING/SEPARADOR AUTENTIQUE` |
 | `onboarding/cadastro-astrea` | Cadastra clientes e abre casos no Astrea | `…/ONBOARDING/CADASTRO ASTREA` |
-| `onboarding/painel-comercial` | Painel comercial mensal | `…/ONBOARDING/PAINEL COMERCIAL` |
+| `onboarding/painel-comercial` | Painel comercial mensal | `EMPRESA/FINANCEIRO/PAINEL COMERCIAL` (pasta privada) |
 | `onboarding/painel-financeiro-asaas-contaazul` | Painel financeiro (ASAAS + Conta Azul) | `EMPRESA/FINANCEIRO/PAINEL FINANCEIRO` (pasta privada) |
 | `onboarding/ocr` | Utilitários de OCR / PDF protegido | `…/ONBOARDING/OCR` |
 | `onboarding/gerador_pdf.html` | Gerador de PDF | `…/ONBOARDING/gerador_pdf.html` |

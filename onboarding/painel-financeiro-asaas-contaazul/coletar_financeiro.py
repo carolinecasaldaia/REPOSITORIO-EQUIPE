@@ -42,7 +42,9 @@ AQUI = Path(__file__).resolve().parent
 # que esta pasta esteja (movida para EMPRESA/FINANCEIRO em 06/11/2026).
 DOC = next(p for p in Path(__file__).resolve().parents if p.name.startswith("Documentos Escrit"))   # acento pode vir decomposto (NFD)
 ONBOARDING = DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING"
-COMERCIAL = ONBOARDING / "PAINEL COMERCIAL"
+COMERCIAL = next((p for p in (DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL COMERCIAL",
+                               ONBOARDING / "PAINEL COMERCIAL") if p.is_dir()),
+                 DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL COMERCIAL")
 sys.path.insert(0, str(ONBOARDING / "CADASTRO ASTREA"))
 
 from src import asaas                                         # noqa: E402

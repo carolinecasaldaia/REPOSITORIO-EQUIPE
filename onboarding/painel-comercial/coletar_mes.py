@@ -29,7 +29,11 @@ from datetime import datetime
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-CADASTRO = AQUI.parent / "CADASTRO ASTREA"
+# Raiz "Documentos Escritório " (acento pode vir decomposto): os caminhos valem onde
+# quer que esta pasta esteja (PAINEL COMERCIAL foi para EMPRESA/FINANCEIRO em 06/11/2026).
+DOC = next(p for p in Path(__file__).resolve().parents if p.name.startswith("Documentos Escrit"))
+ONBOARDING = DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING"
+CADASTRO = ONBOARDING / "CADASTRO ASTREA"
 sys.path.insert(0, str(CADASTRO))
 
 from pypdf import PdfReader                                   # noqa: E402
@@ -38,7 +42,7 @@ from src.astrea import casos as C                             # noqa: E402
 from src.config.settings import get_config                    # noqa: E402
 from src.extractors import contrato_ho                        # noqa: E402
 
-PREPARACAO = AQUI.parent.parent / "PREPARAÇÃO PARA INGRESSO"
+PREPARACAO = ONBOARDING.parent / "PREPARAÇÃO PARA INGRESSO"
 MESES = ("JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO",
          "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO")
 MARCA_OK = re.compile(r"^\d+\s*-\s*OK\s*-\s*")   # "01 - OK -", "1 - OK -", "12 - OK -"

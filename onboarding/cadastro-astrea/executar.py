@@ -1090,7 +1090,7 @@ CODIGO=$?
 # Painel Comercial Contratos (23/10/2026): pega carona nesta rodada, que já
 # tem permissão de ler o Drive, e regrava painel-comercial-dados.json. Falha
 # aqui não muda o resultado do cadastro.
-PAINEL='/Users/carolinemacedo/Library/CloudStorage/GoogleDrive-contato@carolinemacedoadv.com/Meu Drive/Documentos Escritório /A - REVISIONAL/A - COMERCIAL/ONBOARDING/PAINEL COMERCIAL/gerar_dados_painel.py'
+PAINEL='/Users/carolinemacedo/Library/CloudStorage/GoogleDrive-contato@carolinemacedoadv.com/Meu Drive/Documentos Escritório /EMPRESA/FINANCEIRO/PAINEL COMERCIAL/gerar_dados_painel.py'
 "$PY" "$PAINEL" >> "$CASA/logs/painel-comercial.log" 2>&1 || \\
     printf '%s  painel falhou\\n' "$(date '+%d/%m/%Y %H:%M')" >> "$CASA/logs/painel-comercial.log"
 QUANDO=$(date "+%d/%m/%Y %H:%M")

@@ -88,7 +88,7 @@ def enderecos_asaas():
     if cache.get("atualizado") == hoje:
         return cache["clientes"]
     try:
-        sys.path.insert(0, str(AQUI.parent / "CADASTRO ASTREA"))
+        sys.path.insert(0, str(_DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING" / "CADASTRO ASTREA"))
         from src import asaas
         from src.config.settings import get_config
         chave, off, clientes = get_config().asaas_api_key, 0, []
