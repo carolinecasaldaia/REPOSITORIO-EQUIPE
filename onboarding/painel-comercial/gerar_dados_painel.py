@@ -162,7 +162,17 @@ def completar_local(contratos):
 # na Conta Azul já vem na coleta; o resto vem dos extratos OFX que a equipe salva
 # em PAINEL FINANCEIRO/EXTRATOS. "ISRAEL VITOR" é cliente, não o parceiro.
 import re as _re
-PARCEIRO = _re.compile(r"\bISRAEL\s+C(?:ORREIA)?\b(?!\w)|\bISRAEL\s+C\s+S\s+S\b", _re.I)
+# Um nome por parceiro (pedido de 06/11/2026: discriminar no painel). Jonas Alves
+# da Silva é ex-parceiro (Pix na C6 PF em 2025).
+PARCEIROS = {
+    "Israel Correia": _re.compile(r"\bISRAEL\s+C(?:ORREIA)?\b(?!\w)|\bISRAEL\s+C\s+S\s+S\b", _re.I),
+    "Jonas Alves da Silva": _re.compile(r"\bJONAS\s+ALVES\b", _re.I),
+}
+PARCEIRO = _re.compile("|".join("(?:%s)" % r.pattern for r in PARCEIROS.values()), _re.I)
+
+
+def quem(texto):
+    return next((n for n, r in PARCEIROS.items() if r.search(texto or "")), "Parceiro")
 EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
 BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi",
           "336": "C6", "0336": "C6", "323": "Mercado Pago", "0323": "Mercado Pago"}
@@ -192,7 +202,8 @@ def _creditos_ofx(arq):
         if valor <= 0 or not PARCEIRO.search(campo("NAME") + " " + campo("MEMO")):
             continue
         d = campo("DTPOSTED")[:8]
-        out.append(("%s-%s-%s" % (d[:4], d[4:6], d[6:8]), round(valor * 100), conta))
+        out.append(("%s-%s-%s" % (d[:4], d[4:6], d[6:8]), round(valor * 100), conta,
+                    quem(campo("NAME") + " " + campo("MEMO"))))
     return out
 
 
@@ -200,7 +211,9 @@ def _creditos_pdf(arq):
     """Extratos em PDF do Santander (consolidado PF/PJ), Sicredi e Mercado Pago."""
     from pypdf import PdfReader
     leitor = PdfReader(str(arq))
-    if leitor.is_encrypted:     # PDF do C6 com senha: o C6 vai pelo OFX
+    # Mercado Pago vem "protegido" sem senha (abre com senha vazia); o PDF do C6
+    # pede senha de verdade e fica de fora (o C6 vai pelo OFX).
+    if leitor.is_encrypted and not leitor.decrypt(""):
         return []
     L = [l for p in leitor.pages for l in (p.extract_text() or "").splitlines()]
     topo = " ".join(L[:40])
@@ -219,7 +232,7 @@ def _creditos_pdf(arq):
                 continue
             v = _re.search(r"(\d{1,3}(?:\.\d{3})*,\d{2})(-?)", prox(i))
             if v and v[2] != "-":                                # "500,00-" é débito
-                out.append(("%04d-%02d-%02d" % (ano, mes, dia), _cent(v[1]), conta))
+                out.append(("%04d-%02d-%02d" % (ano, mes, dia), _cent(v[1]), conta, quem(l)))
     elif "Cooperativa:" in topo and "Extrato de conta corrente" in topo:   # Sicredi
         conta = "Sicredi " + ("PJ" if _re.search(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", topo) else "PF")
         data = None
@@ -230,7 +243,7 @@ def _creditos_pdf(arq):
             if data and PARCEIRO.search(l) and "RECEBIMENTO" in l.upper():
                 v = _re.search(r"([+-])\s*R\$\s*([\d\.]+,\d{2})", prox(i))
                 if v and v[1] == "+":
-                    out.append((data, _cent(v[2]), conta))
+                    out.append((data, _cent(v[2]), conta, quem(l)))
     elif "DETALHE DOS MOVIMENTOS" in " ".join(L[:80]):          # Mercado Pago
         for i, l in enumerate(L):
             if not (PARCEIRO.search(l) and "recebido" in l.lower()):
@@ -238,7 +251,7 @@ def _creditos_pdf(arq):
             d = _re.search(r"(\d{2})-(\d{2})-(\d{4})", L[i - 1] + " " + l)
             v = _re.search(r"R\$\s*(-?)\s*([\d\.]+,\d{2})", l + " " + prox(i))
             if d and v and not v[1]:
-                out.append(("%s-%s-%s" % (d[3], d[2], d[1]), _cent(v[2]), "Mercado Pago"))
+                out.append(("%s-%s-%s" % (d[3], d[2], d[1]), _cent(v[2]), "Mercado Pago", quem(l)))
     return out
 
 
@@ -261,7 +274,7 @@ def pix_parceiro_extratos():
             continue
         try:
             st = arq.stat()
-            assinatura = "%s|%d|%d" % (arq.relative_to(EXTRATOS), st.st_size, int(st.st_mtime))
+            assinatura = "v2|%s|%d|%d" % (arq.relative_to(EXTRATOS), st.st_size, int(st.st_mtime))
             if assinatura in cache:
                 lista = [tuple(x) for x in cache[assinatura]]
             else:
@@ -359,7 +372,8 @@ def recebimentos():
                     g["n"] += 1
                     if parceiro:
                         vistos.add((c[8] or c[6], int(c[2]), len(vistos)))
-                        g["itens"].append([c[8] or c[6], round(int(c[2]) / 100, 2), "Conta Azul"])
+                        g["itens"].append([c[8] or c[6], round(int(c[2]) / 100, 2), "Conta Azul",
+                                           quem(c[1])])
                     continue
                 # Atraso é medido pelo dia em que o cliente pagou, não pelo crédito:
                 # cartão pago no vencimento (15/09) cai na conta só em outubro e
@@ -374,7 +388,7 @@ def recebimentos():
                     g["itens"].append([c[1], round(cent / 100, 2), c[6], c[8], c[0]])
             # Pix do parceiro que só está no extrato do banco (conta fora da Conta
             # Azul, como a PF do Sicredi, ou ainda não conciliado lá).
-            for data, cent, conta in extrato:
+            for data, cent, conta, nome in extrato:
                 if data[:7] != mes:
                     continue
                 # já lançado na Conta Azul: mesmo valor, até 3 dias de diferença na data
@@ -386,7 +400,7 @@ def recebimentos():
                 g = grupos["parceiros"]
                 g["v"] += cent
                 g["n"] += 1
-                g["itens"].append([data, round(cent / 100, 2), conta])
+                g["itens"].append([data, round(cent / 100, 2), conta, nome])
                 fonte["EXT"] += cent
             # entrada de contrato paga por Pix direto (achada no extrato)
             for e in entradas_ext:
@@ -404,6 +418,10 @@ def recebimentos():
                 g["v"] = round(g["v"] / 100, 2)
                 g["origem"] = {k: round(v / 100, 2) for k, v in sorted(g["origem"].items())}
                 g["itens"].sort(key=lambda x: (x[0], str(x[2])) if len(x) in (3, 4) else (x[2], x[0]))
+            por = {}
+            for i in grupos["parceiros"]["itens"]:
+                por[i[3]] = round(por.get(i[3], 0) + i[1], 2)
+            grupos["parceiros"]["por"] = por
             grupos["fonte"] = {k: round(v / 100, 2) for k, v in fonte.items()}
             grupos["atualizado_em"] = d.get("atualizado_em")
             saida[mes] = grupos

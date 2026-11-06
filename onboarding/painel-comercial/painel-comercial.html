@@ -159,6 +159,8 @@ table.s-tab{min-width:760px}
 .partes .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .partes .m{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap}
 .partes .soma{border-top:1px solid var(--line);padding-top:7px;font-weight:600}
+.partes i.sub{background:transparent}
+.partes span.sub{color:var(--muted);font-size:12.5px;padding-left:4px}
 .partes span.soma:first-of-type{border-top:0}
 @media (max-width:520px){.partes{grid-template-columns:12px minmax(0,1fr) auto}.partes .m{display:none}}
 .kpis.rec .kpi{border-top:3px solid var(--sw,var(--line))}
@@ -434,7 +436,7 @@ const REC_GRUPOS = [
 // Bate com o "Recebido no mês" do Painel Financeiro (ASAAS + Conta Azul).
 const TOTAL_GRUPOS = [
   {k:"entradas",   nome:"Entradas de contratos", cor:"var(--c-ent)"},
-  {k:"parceiros",  nome:"Parceiros (Israel Correia)", cor:"var(--c-par)"},
+  {k:"parceiros",  nome:"Parceiros", cor:"var(--c-par)"},
   {k:"do_mes",     nome:"Parcelas em dia",       cor:"var(--c-dia)"},
   {k:"atrasadas",  nome:"Parcelas atrasadas",    cor:"var(--c-atr)"},
   {k:"adiantadas", nome:"Parcelas adiantadas",   cor:"var(--c-adi)"},
@@ -442,6 +444,12 @@ const TOTAL_GRUPOS = [
 ];
 const recMeses = () => Object.keys(REC).sort().filter(m => sel==="todos" || (ehAno(sel) ? m.startsWith(sel) : m===sel));
 const totalMes = m => TOTAL_GRUPOS.reduce((s,g)=>s+((REC[m]&&REC[m][g.k]||{}).v||0),0);
+// Parceiros separados por nome (Israel Correia, Jonas Alves da Silva…), do maior para o menor.
+function porParceiro(ms){
+  const t = {};
+  ms.forEach(m => ((REC[m].parceiros||{}).itens||[]).forEach(i => { const n = i[3]||"Israel Correia"; t[n] = t[n]||{nome:n, v:0, n:0}; t[n].v += i[1]; t[n].n++; }));
+  return Object.values(t).sort((a,b)=>b.v-a.v);
+}
 function renderTotal(){
   const box = document.getElementById("total-box"), nota = document.getElementById("total-nota");
   const ms = recMeses();
@@ -467,13 +475,13 @@ function renderTotal(){
   box.innerHTML = `<div class="topo"><div><span>${rotulo}</span><b>${brl(tot)}</b><div class="meta">${nTot} pagamentos${comp}</div></div>
       <div class="fontes-t">ASAAS ${brl(fonte("AS"))}<br>Conta Azul ${brl(fonte("CA"))}${fonte("AT")?`<br>Astrea ${brl(fonte("AT"))}`:""}${fonte("EXT")?`<br>Extratos bancários ${brl(fonte("EXT"))}`:""}</div></div>
     <div class="compo" role="img" aria-label="Composição do total recebido">${vis.filter(g=>g.v>0).map(g=>`<i style="background:${g.cor};flex:${g.v}" title="${g.nome}: ${brl(g.v)} (${pct(g.v)})"></i>`).join("")}</div>
-    <div class="partes">${vis.map(g=>`<i style="background:${g.cor}"></i><span>${g.nome}</span><span class="m">${g.n} pag.</span><span class="m">${pct(g.v)}</span><span class="v">${brl(g.v)}</span>`).join("")}
+    <div class="partes">${vis.map(g=>`<i style="background:${g.cor}"></i><span>${g.nome}</span><span class="m">${g.n} pag.</span><span class="m">${pct(g.v)}</span><span class="v">${brl(g.v)}</span>` + (g.k==="parceiros" ? porParceiro(ms).map(p=>`<i class="sub"></i><span class="sub">↳ ${esc(p.nome)}</span><span class="m">${p.n} pag.</span><span class="m">${pct(p.v)}</span><span class="v">${brl(p.v)}</span>`).join("") : "")).join("")}
       <span class="soma"></span><span class="soma">Total</span><span class="soma m">${nTot} pag.</span><span class="soma m">100%</span><span class="soma v">${brl(tot)}</span></div>`
-    + (() => { const it = ms.flatMap(m => ((REC[m].parceiros||{}).itens||[]).map(i => ({m, data:i[0], v:i[1], conta:i[2]}))).sort((a,b)=>a.data<b.data?1:-1);
-        return it.length ? `<details class="rec-det"><summary>Ver os ${it.length} depósitos do parceiro (Israel Correia)</summary><div class="tablebox"><table class="rec-tab" style="min-width:420px"><thead><tr><th>Data</th><th style="text-align:right">Valor</th><th>Onde caiu</th></tr></thead><tbody>${it.map(i=>`<tr><td>${dataBR(i.data)}</td><td class="num">${brl(i.v)}</td><td>${esc(i.conta)}</td></tr>`).join("")}</tbody></table></div></details>` : ""; })()
+    + (() => { const it = ms.flatMap(m => ((REC[m].parceiros||{}).itens||[]).map(i => ({m, data:i[0], v:i[1], conta:i[2], quem:i[3]||"Israel Correia"}))).sort((a,b)=>a.data<b.data?1:-1);
+        return it.length ? `<details class="rec-det"><summary>Ver os ${it.length} depósitos de parceiros</summary><div class="tablebox"><table class="rec-tab" style="min-width:480px"><thead><tr><th>Data</th><th>Parceiro</th><th style="text-align:right">Valor</th><th>Onde caiu</th></tr></thead><tbody>${it.map(i=>`<tr><td>${dataBR(i.data)}</td><td>${esc(i.quem)}</td><td class="num">${brl(i.v)}</td><td>${esc(i.conta)}</td></tr>`).join("")}</tbody></table></div></details>` : ""; })()
     + (() => { const it = ms.flatMap(m => ((REC[m].entradas||{}).itens||[]).filter(i => i.length===4).map(i => ({data:i[0], v:i[1], conta:i[2], cli:i[3]}))).sort((a,b)=>a.data<b.data?1:-1);
         return it.length ? `<details class="rec-det"><summary>Ver as ${it.length} entradas pagas por Pix direto na conta (achadas nos extratos)</summary><div class="tablebox"><table class="rec-tab" style="min-width:520px"><thead><tr><th>Data</th><th>Cliente</th><th style="text-align:right">Valor</th><th>Onde caiu</th></tr></thead><tbody>${it.map(i=>`<tr><td>${dataBR(i.data)}</td><td>${esc(i.cli)}</td><td class="num">${brl(i.v)}</td><td>${esc(i.conta)}</td></tr>`).join("")}</tbody></table></div></details>` : ""; })();
-  nota.textContent = "Tudo o que entrou no período pelo ASAAS (data de crédito) e pela Conta Azul (data de pagamento), o mesmo “recebido” do Painel Financeiro. Em 2025, antes do ASAAS (ago/2025), as parcelas vêm do Financeiro do Astrea (boletos PJBank e baixas lançadas lá, pela data de pagamento). A entrada aqui é a que caiu na conta, incluindo a paga por Pix direto do próprio cliente, achada nos extratos pelo mesmo nome e valor exato perto da data combinada (Pix pago por parente fica de fora); o card Entradas, acima, é a combinada nos contratos do mês. Parceiros: Pix do Israel Correia (contratos fechados por ele, que não entram nos contratos deste painel), lidos da Conta Azul e dos extratos (PDF ou OFX) salvos em PAINEL FINANCEIRO/EXTRATOS (Santander, Sicredi, C6 e Mercado Pago), sem contar duas vezes o mesmo Pix. Mês sem extrato salvo pode ter depósito do parceiro ainda não contado.";
+  nota.textContent = "Tudo o que entrou no período pelo ASAAS (data de crédito) e pela Conta Azul (data de pagamento), o mesmo “recebido” do Painel Financeiro. Em 2025, antes do ASAAS (ago/2025), as parcelas vêm do Financeiro do Astrea (boletos PJBank e baixas lançadas lá, pela data de pagamento). A entrada aqui é a que caiu na conta, incluindo a paga por Pix direto do próprio cliente, achada nos extratos pelo mesmo nome e valor exato perto da data combinada (Pix pago por parente fica de fora); o card Entradas, acima, é a combinada nos contratos do mês. Parceiros: Pix dos parceiros, separados por nome (Israel Correia e o ex-parceiro Jonas Alves da Silva; contratos fechados por eles não entram nos contratos deste painel), lidos da Conta Azul e dos extratos (PDF ou OFX) salvos em PAINEL FINANCEIRO/EXTRATOS (Santander, Sicredi, C6 e Mercado Pago), sem contar duas vezes o mesmo Pix. Mês sem extrato salvo pode ter depósito do parceiro ainda não contado.";
 }
 const dataBR = s => s ? s.slice(0,10).split("-").reverse().join("/") : "—";
 function recPeriodo(){
