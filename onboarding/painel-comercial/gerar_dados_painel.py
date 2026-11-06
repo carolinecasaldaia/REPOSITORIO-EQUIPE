@@ -25,6 +25,11 @@ from datetime import date, datetime
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
+# PAINEL FINANCEIRO foi para EMPRESA/FINANCEIRO em 06/11/2026 (pasta privada).
+_DOC = next(p for p in AQUI.parents if p.name.startswith("Documentos Escrit"))   # acento pode vir decomposto (NFD)
+PAINEL_FIN = next((p for p in (_DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL FINANCEIRO",
+                               AQUI.parent / "PAINEL FINANCEIRO") if p.is_dir()),
+                  _DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL FINANCEIRO")
 sys.path.insert(0, str(AQUI))
 DADOS = AQUI / "dados"
 SAIDA = AQUI / "painel-comercial-dados.json"
@@ -60,7 +65,7 @@ def coletar(meses):
             print("%s: falhou\n%s" % (mes, traceback.format_exc()))
 
 
-FINANCEIRO = AQUI.parent / "PAINEL FINANCEIRO" / "dados"
+FINANCEIRO = PAINEL_FIN / "dados"
 ENDERECOS = DADOS / "enderecos_asaas.json"
 
 
@@ -104,7 +109,7 @@ def enderecos_asaas():
 
 def completar_local(contratos):
     clientes = enderecos_asaas()
-    apel_f = AQUI.parent / "PAINEL FINANCEIRO" / "apelidos.json"
+    apel_f = PAINEL_FIN / "apelidos.json"
     apel = json.loads(apel_f.read_text(encoding="utf-8")) if apel_f.exists() else {}
     comercial_p_asaas = {_n(v): _n(k) for k, v in apel.items() if not k.startswith("_")}
     por_nome = {}
@@ -173,7 +178,7 @@ PARCEIRO = _re.compile("|".join("(?:%s)" % r.pattern for r in PARCEIROS.values()
 
 def quem(texto):
     return next((n for n, r in PARCEIROS.items() if r.search(texto or "")), "Parceiro")
-EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
+EXTRATOS = PAINEL_FIN / "EXTRATOS"
 BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi",
           "336": "C6", "0336": "C6", "323": "Mercado Pago", "0323": "Mercado Pago"}
 

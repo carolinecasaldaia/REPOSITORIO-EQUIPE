@@ -30,7 +30,12 @@ from difflib import SequenceMatcher
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
+# PAINEL FINANCEIRO foi para EMPRESA/FINANCEIRO em 06/11/2026 (pasta privada).
+_DOC = next(p for p in AQUI.parents if p.name.startswith("Documentos Escrit"))   # acento pode vir decomposto (NFD)
+PAINEL_FIN = next((p for p in (_DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL FINANCEIRO",
+                               AQUI.parent / "PAINEL FINANCEIRO") if p.is_dir()),
+                  _DOC / "EMPRESA" / "FINANCEIRO" / "PAINEL FINANCEIRO")
+EXTRATOS = PAINEL_FIN / "EXTRATOS"
 SAIDA = AQUI / "dados" / "entradas_extrato.json"
 DADOS_PAINEL = AQUI / "painel-comercial-dados.json"
 LEITOR = Path.home() / "AUTOMACOES" / "automacoes-claude" / "honorarios-alvaras"

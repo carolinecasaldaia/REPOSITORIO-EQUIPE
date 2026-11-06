@@ -38,8 +38,12 @@ from datetime import date, datetime
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-COMERCIAL = AQUI.parent / "PAINEL COMERCIAL"
-sys.path.insert(0, str(AQUI.parent / "CADASTRO ASTREA"))
+# Raiz "Documentos Escritório " (com espaço no fim): os caminhos valem onde quer
+# que esta pasta esteja (movida para EMPRESA/FINANCEIRO em 06/11/2026).
+DOC = next(p for p in Path(__file__).resolve().parents if p.name.startswith("Documentos Escrit"))   # acento pode vir decomposto (NFD)
+ONBOARDING = DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING"
+COMERCIAL = ONBOARDING / "PAINEL COMERCIAL"
+sys.path.insert(0, str(ONBOARDING / "CADASTRO ASTREA"))
 
 from src import asaas                                         # noqa: E402
 from src.config.settings import get_config                    # noqa: E402

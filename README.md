@@ -11,13 +11,14 @@ nenhum dado de cliente entra aqui (veja `.gitignore`).
 | `onboarding/separador-autentique` | Separa os documentos do Autentique | `…/ONBOARDING/SEPARADOR AUTENTIQUE` |
 | `onboarding/cadastro-astrea` | Cadastra clientes e abre casos no Astrea | `…/ONBOARDING/CADASTRO ASTREA` |
 | `onboarding/painel-comercial` | Painel comercial mensal | `…/ONBOARDING/PAINEL COMERCIAL` |
-| `onboarding/painel-financeiro-asaas-contaazul` | Painel financeiro (ASAAS + Conta Azul) | `…/ONBOARDING/PAINEL FINANCEIRO` |
+| `onboarding/painel-financeiro-asaas-contaazul` | Painel financeiro (ASAAS + Conta Azul) | `EMPRESA/FINANCEIRO/PAINEL FINANCEIRO` (pasta privada) |
 | `onboarding/ocr` | Utilitários de OCR / PDF protegido | `…/ONBOARDING/OCR` |
 | `onboarding/gerador_pdf.html` | Gerador de PDF | `…/ONBOARDING/gerador_pdf.html` |
 | `painel-financeiro` | Relatórios mensais e painel de envios | `A - REVISIONAL/A - RODAGEM/RELATÓRIOS MENSAIS` |
 | `gerador-contratos` | Gera contrato, procuração e declarações | `A - REVISIONAL/A - COMERCIAL/GERADOR CONTRATOS` |
 | `calculadora-revisional` | Calculadora revisional | `A - REVISIONAL/A - COMERCIAL/CALCULADORA REVISIONAL` |
 | `gerador-peticao-revisional` | Gera a petição revisional | `A - REVISIONAL/A - DOCUMENTOS/GERADOR PETIÇÃO REVISIONAL` |
+| `produtividade-astrea` | Ranking do escritório (atividades do ano no Astrea, por pessoa) | `EMPRESA/CLAUDE/PRODUTIVIDADE - PRAZOS ASTREA` |
 | `radar-ba` | Radar B&A (monitoramento nos tribunais) | `MAPEAMENTO TJS/radar-ba` |
 | `cm-calculadora` | Calculadora CM / anonimização de pareceres | `~/cm-calculadora` (fora do Drive) |
 | `meta-ads` | Gerencia campanhas do Facebook/Instagram (Marketing API) | — (token em `~/.meta-ads/.env`) |

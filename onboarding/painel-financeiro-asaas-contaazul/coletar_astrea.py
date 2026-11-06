@@ -29,7 +29,11 @@ from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
 DADOS = AQUI / "dados"
-PRODUTIVIDADE = (AQUI.parents[3] / "EMPRESA" / "CLAUDE" / "PRODUTIVIDADE - PRAZOS ASTREA")
+# Raiz "Documentos Escritório " (com espaço no fim): os caminhos valem onde quer
+# que esta pasta esteja (movida para EMPRESA/FINANCEIRO em 06/11/2026).
+DOC = next(p for p in Path(__file__).resolve().parents if p.name.startswith("Documentos Escrit"))   # acento pode vir decomposto (NFD)
+ONBOARDING = DOC / "A - REVISIONAL" / "A - COMERCIAL" / "ONBOARDING"
+PRODUTIVIDADE = DOC / "EMPRESA" / "CLAUDE" / "PRODUTIVIDADE - PRAZOS ASTREA"
 sys.path.insert(0, str(PRODUTIVIDADE))
 import coletar as base  # noqa: E402  (sessão do Astrea, espera do perfil)
 
