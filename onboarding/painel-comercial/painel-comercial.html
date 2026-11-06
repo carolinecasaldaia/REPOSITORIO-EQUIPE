@@ -3,17 +3,22 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: livro-razão do comercial — seletor de período, números do período, evolução mês a mês, projeção de caixa, distribuições, leituras, tabela */
+/* Cores do escritório (logo Caroline Macedo: marrom #6c3813). Gráficos do recebido: paleta validada
+   (daltonismo, contraste, vizinhas) com o marrom da marca em "em dia". 05/11/2026 */
 :root{
-  --bg:#f5f6f4; --surface:#ffffff; --ink:#1c2321; --muted:#5f6b67; --line:#dfe3e0;
-  --accent:#1f5c4d; --accent-2:#8fb8a9; --accent-soft:#e3eee9; --warn:#9a5b0b; --warn-soft:#f7ecd9; --neutral-soft:#eceeed; --info:#3a6ea5; --entrada:#6b4c9a;
+  --bg:#faf7f3; --surface:#ffffff; --ink:#2b1d13; --muted:#75604f; --line:#e9e0d6;
+  --accent:#6c3813; --accent-2:#d8c2ad; --accent-soft:#f4ebe2; --warn:#a8402a; --warn-soft:#f8e6df; --neutral-soft:#f0ebe5;
+  --c-ent:#3a62c4; --c-dia:#8b4a1c; --c-atr:#c2306a; --c-adi:#6a4fc0; --c-out:#8a8a2a;
   --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",-apple-system,"Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
-  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; --info:#7fa8d6; --entrada:#b39ddb; color-scheme:dark}}
+  --bg:#17110c; --surface:#211913; --ink:#f2e9e1; --muted:#b5a393; --line:#3a2d23;
+  --accent:#d39a6c; --accent-2:#5b4332; --accent-soft:#33251b; --warn:#ef8a6e; --warn-soft:#3d2219; --neutral-soft:#2b211a;
+  --c-ent:#5b82e0; --c-dia:#a8643a; --c-atr:#e86080; --c-adi:#8a70e0; --c-out:#9a9a3a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#141917; --surface:#1c2220; --ink:#e7ece9; --muted:#9aa7a2; --line:#2c3431;
-  --accent:#6fc2aa; --accent-2:#3d6b5e; --accent-soft:#1f3530; --warn:#e2a95a; --warn-soft:#3a2e1c; --neutral-soft:#262d2a; --info:#7fa8d6; --entrada:#b39ddb; color-scheme:dark}
+  --bg:#17110c; --surface:#211913; --ink:#f2e9e1; --muted:#b5a393; --line:#3a2d23;
+  --accent:#d39a6c; --accent-2:#5b4332; --accent-soft:#33251b; --warn:#ef8a6e; --warn-soft:#3d2219; --neutral-soft:#2b211a;
+  --c-ent:#5b82e0; --c-dia:#a8643a; --c-atr:#e86080; --c-adi:#8a70e0; --c-out:#9a9a3a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
 .wrap{max-width:1200px;margin:0 auto;padding-inline:20px;padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
@@ -346,18 +351,18 @@ function renderEvolucao(){
 // (venceram antes) e adiantadas (vencem depois). "origem" = mês do vencimento.
 let REC = {};
 const REC_GRUPOS = [
-  {k:"do_mes",     nome:"Em dia",         cor:"var(--accent)"},
-  {k:"atrasadas",  nome:"Atrasadas",      cor:"var(--warn)"},
-  {k:"adiantadas", nome:"Adiantadas",     cor:"var(--info)"},
+  {k:"do_mes",     nome:"Em dia",         cor:"var(--c-dia)"},
+  {k:"atrasadas",  nome:"Atrasadas",      cor:"var(--c-atr)"},
+  {k:"adiantadas", nome:"Adiantadas",     cor:"var(--c-adi)"},
 ];
 // Total recebido no mês = entradas + parcelas (em dia, atrasadas, adiantadas) + Pix avulso/parceiros.
 // Bate com o "Recebido no mês" do Painel Financeiro (ASAAS + Conta Azul).
 const TOTAL_GRUPOS = [
-  {k:"entradas",   nome:"Entradas de contratos", cor:"var(--entrada)"},
-  {k:"do_mes",     nome:"Parcelas em dia",       cor:"var(--accent)"},
-  {k:"atrasadas",  nome:"Parcelas atrasadas",    cor:"var(--warn)"},
-  {k:"adiantadas", nome:"Parcelas adiantadas",   cor:"var(--info)"},
-  {k:"outros",     nome:"Pix avulso e parceiros", cor:"var(--muted)"},
+  {k:"entradas",   nome:"Entradas de contratos", cor:"var(--c-ent)"},
+  {k:"do_mes",     nome:"Parcelas em dia",       cor:"var(--c-dia)"},
+  {k:"atrasadas",  nome:"Parcelas atrasadas",    cor:"var(--c-atr)"},
+  {k:"adiantadas", nome:"Parcelas adiantadas",   cor:"var(--c-adi)"},
+  {k:"outros",     nome:"Pix avulso e parceiros", cor:"var(--c-out)"},
 ];
 const recMeses = () => Object.keys(REC).sort().filter(m => sel==="todos" || (ehAno(sel) ? m.startsWith(sel) : m===sel));
 const totalMes = m => TOTAL_GRUPOS.reduce((s,g)=>s+((REC[m]&&REC[m][g.k]||{}).v||0),0);
@@ -425,16 +430,16 @@ function renderRecebidas(){
   const cards = [
     ["var(--ink)", um ? `Parcelas recebidas em ${MESL[+mes.slice(5)-1].toLowerCase()}` : "Parcelas recebidas", brl(tot),
       `${nTot} pagamentos` + REC_GRUPOS.map(x=>`<span class="o">${x.nome.toLowerCase()} · ${pct(g[x.k].v)}</span>`).join("")],
-    ["var(--accent)", "Pagas em dia", brl(g.do_mes.v),
+    ["var(--c-dia)", "Pagas em dia", brl(g.do_mes.v),
       `${g.do_mes.n} parcelas pagas no mês do vencimento` + (() => {
         // Cartão/boleto pago em dia no fim do mês anterior, com crédito só neste mês.
         const fora = um ? Object.entries(g.do_mes.origem).filter(([m])=>m!==mes) : [];
         const v = fora.reduce((s,[,x])=>s+x,0);
         return v ? `<span class="o">${brl(v)} de ${fora.map(([m])=>rot(m)).join(", ")}, crédito só agora</span>` : "";
       })()],
-    ["var(--warn)", "Atrasadas recebidas", brl(g.atrasadas.v),
+    ["var(--c-atr)", "Atrasadas recebidas", brl(g.atrasadas.v),
       g.atrasadas.n ? `${g.atrasadas.n} parcelas pagas depois do vencimento · venceram em:` + listaOrigem(g.atrasadas.origem, 4) : "nenhuma parcela atrasada paga " + quando],
-    ["var(--info)", "Adiantadas recebidas", brl(g.adiantadas.v),
+    ["var(--c-adi)", "Adiantadas recebidas", brl(g.adiantadas.v),
       g.adiantadas.n ? `${g.adiantadas.n} parcelas pagas antes do vencimento · venceriam em:` + listaOrigem(g.adiantadas.origem, 4) : "nenhuma parcela adiantada " + quando],
   ];
   box.innerHTML = cards.map(([c,l,v,s])=>`<div class="kpi" style="--sw:${c}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`).join("");
