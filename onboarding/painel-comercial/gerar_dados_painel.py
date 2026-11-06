@@ -164,7 +164,8 @@ def completar_local(contratos):
 import re as _re
 PARCEIRO = _re.compile(r"\bISRAEL\s+C(?:ORREIA)?\b(?!\w)|\bISRAEL\s+C\s+S\s+S\b", _re.I)
 EXTRATOS = AQUI.parent / "PAINEL FINANCEIRO" / "EXTRATOS"
-BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi"}
+BANCOS = {"033": "Santander", "0033": "Santander", "748": "Sicredi", "0748": "Sicredi",
+          "336": "C6", "0336": "C6", "323": "Mercado Pago", "0323": "Mercado Pago"}
 
 
 MESES_PT = {m: i + 1 for i, m in enumerate(
@@ -185,7 +186,8 @@ def _creditos_ofx(arq):
         conta += " PF" if acct.endswith(SICREDI_PF) else " PJ"
     out = []
     for t in _re.findall(r"<STMTTRN>(.*?)(?:</STMTTRN>|(?=<STMTTRN>)|</BANKTRANLIST>)", txt, _re.S | _re.I):
-        campo = lambda n: (_re.search(r"<%s>\s*([^<\r\n]*)" % n, t, _re.I) or [None, ""])[1].strip()
+        # o C6 quebra o MEMO em várias linhas
+        campo = lambda n: " ".join((_re.search(r"<%s>\s*([^<]*)" % n, t, _re.I) or [None, ""])[1].split())
         valor = float(campo("TRNAMT").replace(",", ".") or 0)
         if valor <= 0 or not PARCEIRO.search(campo("NAME") + " " + campo("MEMO")):
             continue
