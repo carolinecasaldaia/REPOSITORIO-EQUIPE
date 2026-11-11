@@ -22,6 +22,7 @@ O que foi aprendido na tela e está codificado aqui:
   trava. Por isso tudo aqui é escopado em [data-testid=floating-page].
 """
 
+import json
 import os
 import re
 import time
@@ -532,43 +533,114 @@ def abrir_tarefa(pagina, url_caso, titulo_caso, cliente, tarefa, responsavel, da
     raise ultimo
 
 
+# --- Tarefa pela API interna do Astrea (11/11/2026)
+#
+# Até 04/11/2026 a tarefa era criada pela TELA: o campo de vínculo era
+# preenchido digitando o nome do cliente e clicando na primeira sugestão com o
+# título "COMERCIAL - REVISIONAL VEICULAR". Esse título é o mesmo para todos
+# os clientes, e o caso recém-criado ainda não aparecia na busca: as 3
+# primeiras tarefas do Daniel Oliveira da Silva foram parar no caso do Carlos
+# Daniel da Silva, e as do Felipe da Silva Ribeiro no da Priscila Ribeiro de
+# Oliveira — e o log disse "5 tarefas, 0 falhas", porque nada conferia.
+# Agora a tarefa é gravada direto no caso pelo NÚMERO dele (o mesmo que está
+# na URL da pasta), e só conta como criada depois de relida no próprio caso.
+APP = "https://app.astrea.net.br"
+ENDP = APP + "/_ah/api"
+USUARIO_ASTREA = "5487223873241088"     # conta Claude
+TENANT = "6406437268422656"
+_CREDENCIAIS = {}
+
+
+def caso_id_da_url(url_caso: str) -> str:
+    m = re.search(r"/folders/detail/(\d+)", url_caso or "")
+    if not m:
+        raise RuntimeError("não achei o número do caso na URL %r" % url_caso)
+    return m.group(1)
+
+
+def _credencial(pagina) -> str:
+    """O token da sessão, pego de uma requisição que o próprio site faz."""
+    chave = id(pagina)
+    if _CREDENCIAIS.get(chave):
+        return _CREDENCIAIS[chave]
+
+    def ao_pedir(req):
+        if req.url.startswith(APP + "/") and "authorization" in req.headers:
+            _CREDENCIAIS[chave] = req.headers["authorization"]
+    pagina.on("request", ao_pedir)
+    for rota in ("#/main/workspace", "#/main/contacts"):
+        pagina.goto("https://astrea.net.br/" + rota, wait_until="domcontentloaded", timeout=60000)
+        conferir_sessao(pagina)
+        for _ in range(25):
+            if _CREDENCIAIS.get(chave):
+                return _CREDENCIAIS[chave]
+            pagina.wait_for_timeout(1000)
+    raise RuntimeError("não consegui a credencial da sessão do Astrea")
+
+
+def _api(pagina, caminho, corpo=None):
+    cab = {"authorization": _credencial(pagina), "content-type": "application/json"}
+    url = ENDP + caminho
+    if corpo is None:
+        r = pagina.request.get(url, headers=cab, timeout=120000)
+    else:
+        r = pagina.request.post(url, headers=cab, data=json.dumps(corpo), timeout=120000)
+    if r.status not in (200, 204):
+        if r.status in (401, 403):
+            _CREDENCIAIS.pop(id(pagina), None)
+        raise RuntimeError("Astrea respondeu %s em %s: %s"
+                           % (r.status, caminho.split("?")[0], r.text()[:200]))
+    try:
+        return r.json()
+    except Exception:
+        return {}
+
+
+def _tarefas_no_caso(pagina, caso_id) -> list:
+    r = _api(pagina, "/workspace/v1/getTasksByCase?caseId=%s&userId=%s"
+             % (caso_id, USUARIO_ASTREA), {})
+    return [((t.get("description") or "").strip().upper(), aberta)
+            for chave, aberta in (("activeTasks", True), ("inactiveTasks", False))
+            for t in (r.get(chave) or [])]
+
+
+def _id_do_responsavel(pagina, nome) -> str:
+    r = _api(pagina, "/users/v1/getAllUsers?tenantId=%s" % TENANT, {})
+    alvo = _sem_acento(nome)
+    achados = [u for u in r.get("users", []) if u.get("status") == "ACTIVE"
+               and alvo in _sem_acento((u.get("name") or "").strip())]
+    if len(achados) != 1:
+        raise RuntimeError("responsável %r: %s no Astrea" % (
+            nome, "não encontrado" if not achados else "ambíguo"))
+    return str(achados[0]["id"])
+
+
 def _abrir_tarefa(pagina, url_caso, titulo_caso, cliente, tarefa, responsavel, data):
-    """Cria uma tarefa dentro do caso, com responsável e data."""
-    fechar_paineis(pagina)
-    pagina.goto(url_caso, wait_until="domcontentloaded", timeout=60000)
-    time.sleep(7)
-    conferir_sessao(pagina)
-    fechar_guia_inicial(pagina)
-    pagina.get_by_role("button", name="ADICIONAR", exact=False).first.click()
-    time.sleep(3)
-    pagina.get_by_text("Tarefa", exact=True).first.click()
-    time.sleep(6)
-
-    painel = pagina.locator("[data-testid=floating-page]").first
-    descricao = pagina.locator("[placeholder='Digite a descrição da tarefa']").first
-    descricao.click()
-    descricao.fill(tarefa)
-    time.sleep(0.4)
-
-    quando = pagina.locator("[placeholder='Digite a data']").first
-    quando.click()
-    quando.fill(data)
-    pagina.keyboard.press("Escape")
-    time.sleep(0.4)
-
-    vinculo = pagina.locator("[placeholder='Encontre um processo, caso ou atendimento']").first
-    vinculo.click()
-    _sugerir(pagina, cliente, titulo_caso, preferir_completo=True)
-
-    quem = pagina.locator("[placeholder='Digite o nome do responsável']").first
-    quem.click()
-    quem.fill("")
-    time.sleep(0.4)
-    _sugerir(pagina, responsavel, responsavel)
-
-    # O SALVAR de dentro do painel — o de fora trava a automação.
-    painel.get_by_text("SALVAR", exact=False).last.click()
-    time.sleep(6)
+    """Cria a tarefa NO caso (pelo número dele) e confere relendo o caso."""
+    caso_id = caso_id_da_url(url_caso)
+    alvo = tarefa.strip().upper()
+    # Não duplica: se a tentativa anterior gravou mas a conferência falhou,
+    # a tarefa já está lá.
+    if any(t == alvo and aberta for t, aberta in _tarefas_no_caso(pagina, caso_id)):
+        return
+    dia, mes, ano = data.split("/")
+    itens = (_api(pagina, "/workspace/v1/listTaskListsByUser?userId=%s" % USUARIO_ASTREA)
+             .get("items") or [])
+    lista = ([i for i in itens if i.get("current")] or itens or [{}])[0].get("id")
+    if not lista:
+        raise RuntimeError("conta Claude sem lista de tarefas no Astrea")
+    quem = _id_do_responsavel(pagina, responsavel)
+    salva = _api(pagina, "/workspace/v1/saveTaskWithList", {
+        "userId": USUARIO_ASTREA, "idUser": USUARIO_ASTREA, "idCurrentTaskList": lista,
+        "responsibleId": quem, "rootCaseId": caso_id,
+        "taskInfoDTO": {"caseId": caso_id, "description": tarefa,
+                        "dueDate": "%s-%s-%s" % (ano, mes, dia), "responsibleId": quem,
+                        "ownerId": USUARIO_ASTREA, "priority": 2, "involved": [],
+                        "tagIds": [], "taskListIds": [lista], "done": False}})
+    if not salva.get("id"):
+        raise RuntimeError("o Astrea não devolveu o número da tarefa %s" % tarefa)
+    if not any(titulo == alvo for titulo, _ in _tarefas_no_caso(pagina, caso_id)):
+        raise RuntimeError("tarefa %s gravada mas não aparece no caso %s" % (tarefa, caso_id))
 
 
 def tarefas_existentes(pagina, url_caso, tarefas) -> set:
@@ -577,8 +649,16 @@ def tarefas_existentes(pagina, url_caso, tarefas) -> set:
 
     A aba Atividades é a única lista completa: o painel "Próximas atividades"
     mostra no máximo cinco, e foi lendo ele que o João Roberto ficou com
-    INFORMAR PROTOCOLO duplicada (18/08/2026).
+    INFORMAR PROTOCOLO duplicada (18/08/2026). Desde 11/11/2026 lê primeiro
+    pela API, no próprio caso; a tela fica só de reserva.
     """
+    try:
+        no_caso = {titulo for titulo, _ in _tarefas_no_caso(pagina, caso_id_da_url(url_caso))}
+        return {tarefa for tarefa in tarefas if tarefa.strip().upper() in no_caso}
+    except SessaoCaiu:
+        raise
+    except Exception:
+        pass
     pagina.goto(url_caso, wait_until="domcontentloaded", timeout=60000)
     time.sleep(7)
     conferir_sessao(pagina)

@@ -743,3 +743,98 @@ class TestPadraoTolerante(unittest.TestCase):
     def test_nome_vazio_nao_gera_padrao(self):
         self.assertIsNone(C.padrao_tolerante(""))
         self.assertIsNone(C.padrao_tolerante("de da do"))
+
+
+class _Resposta(object):
+    def __init__(self, corpo, status=200):
+        self.corpo, self.status = corpo, status
+
+    def json(self):
+        return self.corpo
+
+    def text(self):
+        return str(self.corpo)
+
+
+class _AstreaFalso(object):
+    """API do Astrea de mentira: guarda tarefas por caso."""
+
+    def __init__(self, tarefas=None, perde_ao_gravar=False):
+        self.tarefas = tarefas or {}
+        self.gravadas = []
+        self.perde_ao_gravar = perde_ao_gravar
+        self.request = self
+
+    def _responder(self, url, corpo=None):
+        if "getTasksByCase" in url:
+            caso = url.split("caseId=")[1].split("&")[0]
+            return _Resposta({"activeTasks": [{"description": t}
+                                              for t in self.tarefas.get(caso, [])]})
+        if "listTaskListsByUser" in url:
+            return _Resposta({"items": [{"id": "L1", "current": True}]})
+        if "getAllUsers" in url:
+            return _Resposta({"users": [{"id": 7, "name": "Emerson Medeiros", "status": "ACTIVE"}]})
+        if "saveTaskWithList" in url:
+            info = corpo["taskInfoDTO"]
+            self.gravadas.append(info)
+            if not self.perde_ao_gravar:
+                self.tarefas.setdefault(info["caseId"], []).append(info["description"])
+            return _Resposta({"id": "T%d" % len(self.gravadas)})
+        return _Resposta({}, 404)
+
+    def get(self, url, headers=None, timeout=None):
+        return self._responder(url)
+
+    def post(self, url, headers=None, data=None, timeout=None):
+        import json
+        return self._responder(url, json.loads(data))
+
+
+class TestTarefaPeloNumeroDoCaso(unittest.TestCase):
+    """
+    Daniel Oliveira da Silva, 04/11/2026: escolher o caso pela sugestão da tela
+    jogou 3 tarefas no caso do Carlos Daniel da Silva. A tarefa agora vai pelo
+    número do caso e só conta depois de relida nele.
+    """
+
+    URL = "https://astrea.net.br/#/main/folders/detail/5235713393328128"
+
+    def setUp(self):
+        self._cred = C._credencial
+        C._credencial = lambda pagina: "token"
+
+    def tearDown(self):
+        C._credencial = self._cred
+
+    def test_numero_do_caso_sai_da_url(self):
+        self.assertEqual(C.caso_id_da_url(self.URL), "5235713393328128")
+        with self.assertRaises(RuntimeError):
+            C.caso_id_da_url("https://astrea.net.br/#/main/contacts")
+
+    def test_grava_no_caso_da_url_com_responsavel_e_data(self):
+        api = _AstreaFalso()
+        C._abrir_tarefa(api, self.URL, "COMERCIAL - REVISIONAL VEICULAR", "Daniel Oliveira da Silva",
+                        "ENVIAR ONBOARDING", "Emerson Medeiros", "11/11/2026")
+        self.assertEqual(len(api.gravadas), 1)
+        self.assertEqual(api.gravadas[0]["caseId"], "5235713393328128")
+        self.assertEqual(api.gravadas[0]["responsibleId"], "7")
+        self.assertEqual(api.gravadas[0]["dueDate"], "2026-11-11")
+
+    def test_nao_duplica_tarefa_aberta(self):
+        api = _AstreaFalso({"5235713393328128": ["ENVIAR ONBOARDING"]})
+        C._abrir_tarefa(api, self.URL, "T", "Daniel", "ENVIAR ONBOARDING", "Emerson Medeiros",
+                        "11/11/2026")
+        self.assertEqual(api.gravadas, [])
+
+    def test_tarefa_que_nao_aparece_no_caso_e_falha(self):
+        api = _AstreaFalso(perde_ao_gravar=True)
+        with self.assertRaises(RuntimeError):
+            C._abrir_tarefa(api, self.URL, "T", "Daniel", "ENVIAR ONBOARDING",
+                            "Emerson Medeiros", "11/11/2026")
+
+    def test_tarefas_existentes_le_o_proprio_caso(self):
+        api = _AstreaFalso({"5235713393328128": ["INFORMAR PROTOCOLO"],
+                            "999": ["ENVIAR ONBOARDING"]})
+        self.assertEqual(C.tarefas_existentes(api, self.URL, ["ENVIAR ONBOARDING",
+                                                              "INFORMAR PROTOCOLO"]),
+                         {"INFORMAR PROTOCOLO"})
