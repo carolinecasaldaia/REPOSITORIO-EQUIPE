@@ -733,6 +733,54 @@ def _cadastro_asaas_indicado(item):
     return ""
 
 
+ARQUIVO_ENTRADA_SEM_NOME = Path(__file__).resolve().parent / \
+    "ENTRADA SEM O NOME NO ASAAS.txt"
+
+
+def _cobranca_indicada(item, config, log):
+    """
+    Cobrança (pay_...) que ela indicou na lista como a ENTRADA do cliente,
+    quando o comercial esqueceu de pôr "ENTRADA" na descrição. Só vale se a
+    cobrança estiver paga e for de um cadastro do Asaas deste cliente (pelo
+    CPF ou o indicado na outra lista) — um número digitado errado não abre o
+    caso de ninguém.
+    """
+    from src import asaas
+    from src.validators.documentacao import _normal
+    try:
+        linhas = ARQUIVO_ENTRADA_SEM_NOME.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    nomes = {_normal(n) for n in (item.get("cliente"), item.get("nome_pasta"),
+                                  item.get("nome_cliente_bruto")) if n}
+    for linha in linhas:
+        linha = linha.split("#", 1)[0].strip()
+        if "=" not in linha:
+            continue
+        quem, cobranca_id = (parte.strip() for parte in linha.split("=", 1))
+        if _normal(quem) not in nomes or not cobranca_id.startswith("pay_"):
+            continue
+        try:
+            cobranca = asaas._chamar("/payments/%s" % cobranca_id, config.asaas_api_key)
+            donos = {asaas.buscar_cliente_por_cpf(item["cpf_cnpj"], config.asaas_api_key),
+                     _cadastro_asaas_indicado(item)} - {None, ""}
+        except asaas.ErroAsaas as erro:
+            log.alerta("Não consegui conferir a cobrança %s de %s: %s"
+                       % (cobranca_id, item["cliente"], erro))
+            return None
+        if cobranca.get("customer") not in donos:
+            log.alerta("A cobrança %s indicada como entrada de %s é de outro cadastro "
+                       "do Asaas — NÃO abri o caso." % (cobranca_id, item["cliente"]))
+            return None
+        if cobranca.get("status") not in asaas.STATUS_PAGO:
+            return None
+        log.info("Entrada de %s: cobrança %s indicada na lista (R$ %s, paga em %s)."
+                 % (item["cliente"], cobranca_id, cobranca.get("value"),
+                    cobranca.get("paymentDate")))
+        return cobranca
+    return None
+
+
 def _entrada_do_cliente(item, config, log, cpfs_de_clientes):
     """
     Cobrança de ENTRADA paga do cliente: primeiro pelo CPF do contratante;
@@ -761,6 +809,12 @@ def _entrada_do_cliente(item, config, log, cpfs_de_clientes):
             log.info("Entrada de %s encontrada no cadastro do Asaas indicado na "
                      "lista (%s)." % (item["cliente"], cadastro))
             return cobranca
+
+    # Entrada paga, mas a cobrança foi feita sem "ENTRADA" na descrição,
+    # indicada por ela na lista (13/11/2026: Cláudia Aparecida Amador Pedroso).
+    cobranca = _cobranca_indicada(item, config, log)
+    if cobranca:
+        return cobranca
 
     cpf_resp = _so_digitos(item.get("cpf_responsavel"))
     if not cpf_resp or cpf_resp == _so_digitos(item["cpf_cnpj"]):
@@ -1093,6 +1147,11 @@ CODIGO=$?
 PAINEL='/Users/carolinemacedo/Library/CloudStorage/GoogleDrive-contato@carolinemacedoadv.com/Meu Drive/Documentos Escritório /EMPRESA/FINANCEIRO/PAINEL COMERCIAL/gerar_dados_painel.py'
 "$PY" "$PAINEL" >> "$CASA/logs/painel-comercial.log" 2>&1 || \\
     printf '%s  painel falhou\\n' "$(date '+%d/%m/%Y %H:%M')" >> "$CASA/logs/painel-comercial.log"
+# Painel Financeiro (12/11/2026): mesma carona; junta os financeiro_*.json da
+# tarefa diária em painel-financeiro-dados.json, que o painel lê pelo Drive.
+FINANCEIRO='/Users/carolinemacedo/Library/CloudStorage/GoogleDrive-contato@carolinemacedoadv.com/Meu Drive/Documentos Escritório /EMPRESA/FINANCEIRO/PAINEL FINANCEIRO/gerar_dados_painel.py'
+"$PY" "$FINANCEIRO" >> "$CASA/logs/painel-financeiro.log" 2>&1 || \\
+    printf '%s  painel falhou\\n' "$(date '+%d/%m/%Y %H:%M')" >> "$CASA/logs/painel-financeiro.log"
 QUANDO=$(date "+%d/%m/%Y %H:%M")
 
 if [ "$CODIGO" -eq 0 ]; then

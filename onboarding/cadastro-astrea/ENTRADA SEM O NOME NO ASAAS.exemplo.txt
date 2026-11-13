@@ -1,0 +1,14 @@
+# Clientes cuja ENTRADA foi paga numa cobrança do Asaas sem "ENTRADA" na descrição.
+#
+# A automação só reconhece a entrada pela descrição que começa com "ENTRADA".
+# Quando o comercial esquece, o caso não abre sozinho. Indique aqui o número
+# da cobrança paga (pay_..., aparece no Asaas, na cobrança) e a próxima rodada
+# abre o caso. A cobrança precisa estar paga e ser do cadastro do próprio
+# cliente no Asaas — se não for, a automação avisa e não abre nada.
+#
+# Formato:  NOME DO CLIENTE (ou da pasta) = número da cobrança (pay_...)
+# Acentos e maiúsculas não importam. O que vem depois de # é ignorado.
+#
+# Para tirar, apague a linha.
+
+# FULANO DE TAL = pay_xxxxxxxxxxxxxxxx   # R$ 500 por Pix em 10/11/2026
