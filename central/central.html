@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central do Escritório</title>
+<link rel="icon" href="/marca/simbolo.png">
+<style>
+/* Identidade do escritório (EMPRESA/LOGO): marrom #6C3813 e dourado #D8C99E */
+:root{
+  --marrom:#6c3813; --dourado:#d8c99e;
+  --bg:#f8f5ee; --painel:#ffffff; --lateral:var(--marrom); --lateral-txt:#eadfc4; --lateral-ativo:#ffffff;
+  --txt:#2b1a0d; --suave:#7a6652; --linha:#e8dfcc; --destaque:var(--marrom); --destaque-fundo:#f3ead9;
+  --ok:#3d7a4a; --ok-fundo:#e6f0e3; --alerta:#9a6410; --alerta-fundo:#fbefd9; --erro:#a8362f; --erro-fundo:#f8e1df;
+  --serifa:"Iowan Old Style","Baskerville","Georgia",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#17100a; --painel:#22170e; --lateral:#4a260d; --txt:#f1e9d8; --suave:#b5a385; --linha:#3a2a1b;
+  --destaque:var(--dourado); --destaque-fundo:#33281a; --ok:#8fc79a; --ok-fundo:#1d2e1f; --alerta:#e2a94c; --alerta-fundo:#33270f;
+  --erro:#ee8a82; --erro-fundo:#3a1b19; color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);display:flex}
+a{color:inherit}
+nav{width:248px;flex:none;background:var(--lateral);color:var(--lateral-txt);overflow-y:auto;padding:20px 12px}
+nav{background:var(--marrom)}
+nav .marca{display:block;padding:4px 6px 4px}
+nav .marca img{display:block;width:100%;height:auto}
+nav .marca small{display:block;margin:10px 4px 0;padding-top:10px;border-top:1px solid rgba(216,201,158,.3);color:var(--dourado);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+nav h6{margin:20px 10px 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dourado);opacity:.8;font-weight:600}
+nav a{display:block;padding:6px 10px;border-radius:7px;text-decoration:none;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid transparent}
+nav a:hover{background:rgba(216,201,158,.1)}
+nav a.ativo{background:rgba(216,201,158,.16);color:var(--lateral-ativo);border-left-color:var(--dourado)}
+main{flex:1;min-width:0;display:flex;flex-direction:column}
+.vista{flex:1;overflow-y:auto;padding:28px 32px 40px}
+[hidden]{display:none!important}
+h1{font:600 26px/1.2 var(--serifa);margin:0 0 4px;color:var(--destaque)}
+.sub{color:var(--suave);margin:0 0 24px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--suave);margin:28px 0 10px;font-weight:600}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.cartao{background:var(--painel);border:1px solid var(--linha);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;text-decoration:none;cursor:pointer;transition:border-color .15s}
+.cartao:hover{border-color:var(--destaque)}
+.cartao b{font-weight:600}
+.cartao .d{color:var(--suave);font-size:12.5px}
+.cartao .rodape{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px;gap:8px}
+.selo{font-size:11.5px;padding:2px 8px;border-radius:99px;background:var(--linha);color:var(--suave);white-space:nowrap}
+.selo.ok{background:var(--ok-fundo);color:var(--ok)}
+.selo.alerta{background:var(--alerta-fundo);color:var(--alerta)}
+.selo.erro{background:var(--erro-fundo);color:var(--erro)}
+button{font:inherit;font-size:12.5px;border:1px solid var(--linha);background:var(--painel);color:var(--txt);padding:5px 11px;border-radius:7px;cursor:pointer}
+button:hover{border-color:var(--destaque)}
+button.forte{background:var(--destaque);border-color:var(--destaque);color:#fff}
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:6px}
+.num{background:var(--painel);border:1px solid var(--linha);border-radius:10px;padding:14px 16px}
+.num{border-top:3px solid var(--dourado)}
+.num span{display:block;font:600 28px/1.2 var(--serifa);font-variant-numeric:tabular-nums}
+button.forte{color:var(--painel)}
+/* atraso: do mais recente (dourado) ao mais antigo (vermelho) */
+:root{--a0:#d8c99e;--a1:#b98a4e;--a2:#8a4a1c;--a3:#a8362f}
+.barra-atraso{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin:10px 0 14px}
+.barra-atraso i{display:block;min-width:3px}
+.f0{background:var(--a0)}.f1{background:var(--a1)}.f2{background:var(--a2)}.f3{background:var(--a3)}
+#asaas,#ca{grid-template-columns:repeat(4,minmax(0,1fr))}
+#asaas > .num > span,#ca > .num > span{font-size:24px;overflow-wrap:anywhere}
+@media (max-width:1000px){#asaas,#ca{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.total-fin{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 32px;margin-top:12px;background:var(--destaque-fundo)}
+.total-fin b{font-weight:600;margin-right:auto}
+.total-fin span{display:inline!important;font-size:22px!important}
+.total-fin span small{font:13px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--suave)}
+.faixas{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.faixas b{display:flex;align-items:center;gap:7px;font-weight:500;font-size:12.5px;color:var(--suave)}
+.faixas b i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.num .faixas span{font-size:20px;margin:2px 0}
+.num small{color:var(--suave)}
+table{width:100%;border-collapse:collapse;background:var(--painel);border:1px solid var(--linha);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--suave);font-weight:600}
+tr:last-child td{border-bottom:none}
+pre{margin:6px 0 0;font:11.5px/1.4 ui-monospace,Menlo,monospace;color:var(--suave);white-space:pre-wrap;word-break:break-word;max-height:120px;overflow:auto}
+details summary{cursor:pointer;color:var(--suave);font-size:12px}
+.tabela{overflow-x:auto}
+#visor{padding:0;display:flex;flex-direction:column}
+#visor .barra{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--linha);background:var(--painel)}
+#visor .barra b{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#visor iframe{flex:1;border:0;width:100%;background:#fff}
+#aviso{position:fixed;bottom:18px;right:18px;background:var(--txt);color:var(--bg);padding:10px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+#aviso.v{opacity:1}
+/* Atendimentos (Multichat) */
+.periodo{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 18px}
+.periodo button.ativo{background:var(--destaque-fundo);border-color:var(--destaque);color:var(--destaque);font-weight:600}
+.periodo input{font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--linha);border-radius:7px;background:var(--painel);color:var(--txt)}
+.num .comp{display:block;margin-top:4px;font:12px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--suave)}
+#at-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1100px){#at-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.duas{display:grid;grid-template-columns:3fr 2fr;gap:12px}
+@media (max-width:1000px){.duas{grid-template-columns:1fr}}
+.grafico{background:var(--painel);border:1px solid var(--linha);border-radius:10px;padding:14px 16px}
+.grafico > small{color:var(--suave)}
+.colunas{display:flex;align-items:flex-end;gap:2px;height:170px;margin-top:12px;border-bottom:1px solid var(--linha);position:relative}
+.colunas .c{flex:1;height:100%;display:flex;align-items:flex-end;position:relative;cursor:default}
+.colunas .c i{display:block;width:100%;background:var(--marrom);border-radius:4px 4px 0 0;min-height:0}
+.colunas .c.fds i{opacity:.45}
+.colunas .c:hover i{background:var(--dourado)}
+.eixo{display:flex;gap:2px;font-size:10.5px;color:var(--suave);margin-top:4px}
+.eixo span{flex:1;text-align:center;overflow:hidden;white-space:nowrap}
+.dica{position:fixed;pointer-events:none;background:var(--txt);color:var(--bg);font-size:12px;padding:6px 9px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:5;white-space:nowrap}
+.dica.v{opacity:1}
+.hbar{display:grid;grid-template-columns:minmax(90px,140px) 1fr auto;gap:6px 10px;align-items:center;margin-top:12px;font-size:12.5px}
+.hbar > b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .t{height:12px;background:var(--destaque-fundo);border-radius:4px;overflow:hidden}
+.hbar .t i{display:block;height:100%;background:var(--marrom);border-radius:0 4px 4px 0}
+.hbar > span{font-variant-numeric:tabular-nums;color:var(--suave)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .mini{display:inline-block;vertical-align:middle;height:8px;background:var(--marrom);border-radius:0 4px 4px 0;margin-left:8px}
+tr.fila td{color:var(--suave)}
+@media (prefers-color-scheme:dark){.colunas .c i,.hbar .t i,td .mini{background:var(--dourado)}.colunas .c:hover i{background:#fff}}
+@media (max-width:760px){
+  body{flex-direction:column}
+  nav{width:auto;max-height:42vh}
+  .vista{padding:20px 16px 32px}
+}
+</style>
+</head>
+<body>
+<nav id="menu">
+  <a class="marca" href="#inicio" style="border:0;background:none"><img src="/marca/assinatura.png" alt="Caroline Macedo Advocacia &amp; Consultoria"><small>Central do Escritório</small></a>
+  <h6>Visão geral</h6>
+  <a href="#inicio" data-r="inicio">Início</a>
+  <a href="#atendimentos" data-r="atendimentos">Atendimentos</a>
+  <a href="#rotinas" data-r="rotinas">Rotinas agendadas</a>
+  <a href="#robos" data-r="robos">Robôs</a>
+  <h6>Painéis</h6><div id="m-paineis"></div>
+  <h6>Geradores</h6><div id="m-geradores"></div>
+  <h6>Sistemas</h6><div id="m-sistemas"></div>
+  <h6>Online (claude.ai)</h6><div id="m-online"></div>
+</nav>
+<main>
+  <section class="vista" id="v-inicio"></section>
+  <section class="vista" id="v-atendimentos" hidden></section>
+  <section class="vista" id="v-rotinas" hidden></section>
+  <section class="vista" id="v-robos" hidden></section>
+  <section class="vista" id="visor" hidden>
+    <div class="barra"><b id="visor-nome"></b>
+      <button id="visor-recarregar">Recarregar</button>
+      <button id="visor-aba">Abrir em aba própria</button>
+      <button id="visor-pasta">Mostrar no Finder</button>
+    </div>
+    <iframe id="visor-quadro" title="Conteúdo"></iframe>
+  </section>
+</main>
+<div id="aviso"></div>
+<div class="dica" id="dica"></div>
+<script>
+const TOKEN = "__TOKEN__";
+let E = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id => document.getElementById(id);
+
+function quando(ts){
+  if(!ts) return "—";
+  const s = E.agora - ts, d = new Date(ts*1000);
+  const hora = d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  if(s < 3600) return `há ${Math.max(1,Math.round(s/60))} min`;
+  const hoje = new Date(E.agora*1000);
+  if(d.toDateString() === hoje.toDateString()) return `hoje ${hora}`;
+  const ontem = new Date(hoje); ontem.setDate(hoje.getDate()-1);
+  if(d.toDateString() === ontem.toDateString()) return `ontem ${hora}`;
+  return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) + " " + hora;
+}
+function frescor(p){
+  if(!p.existe) return ["erro","não encontrado"];
+  if(!p.freq) return ["", quando(p.atualizado)];
+  const dias = (E.agora - p.atualizado)/86400;
+  if(dias > p.freq*1.5 + .5) return ["alerta", "desatualizado · " + quando(p.atualizado)];
+  return ["ok", quando(p.atualizado)];
+}
+function situacaoRotina(r){
+  if(!r.carregada) return ["erro","desligada"];
+  if(r.rodando) return ["ok","rodando agora"];
+  if(r.codigo && r.codigo !== "0") return ["erro","último erro · código " + r.codigo];
+  return ["ok","ok"];
+}
+function aviso(t){ const a=$("aviso"); a.textContent=t; a.classList.add("v"); clearTimeout(a._t); a._t=setTimeout(()=>a.classList.remove("v"),2600); }
+
+async function post(url, corpo){
+  const r = await fetch(url,{method:"POST",headers:{"X-Token":TOKEN,"Content-Type":"application/json"},body:JSON.stringify(corpo||{})});
+  return r.json().catch(()=>({ok:r.ok}));
+}
+async function abrir(id, nome){
+  const r = await post("/abrir/"+id);
+  aviso(r.ok ? `${nome}: aberto no Terminal` : (r.msg || "Não consegui abrir"));
+}
+
+function menu(){
+  const item = (r, nome) => `<a href="#${r}" data-r="${r}">${esc(nome)}</a>`;
+  $("m-paineis").innerHTML = E.paineis.map(p => item("p/"+p.id, p.nome)).join("");
+  $("m-geradores").innerHTML = E.geradores.map(g => item("g/"+g.id, g.nome)).join("");
+  $("m-sistemas").innerHTML = E.sistemas.map(s => item("s/"+s.id, s.nome.replace("Calculadora Judicial","Calc. Judicial"))).join("");
+  $("m-online").innerHTML = E.online.map(o => `<a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.nome)} ↗</a>`).join("");
+}
+
+function inicio(){
+  const atrasados = E.paineis.filter(p => frescor(p)[0] === "alerta" || !p.existe).length;
+  const problemas = E.rotinas.filter(r => situacaoRotina(r)[0] === "erro").length;
+  const ligados = E.sistemas.filter(s => s.ligado).length;
+  const hoje = new Date(E.agora*1000).toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+  $("v-inicio").innerHTML = `
+    <h1>${(h => h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite")(new Date().getHours())}, Caroline</h1><p class="sub">${esc(hoje)} · tudo do escritório em um lugar</p>
+    <div class="resumo">
+      <div class="num"><span>${E.rotinas.length - problemas}/${E.rotinas.length}</span><small>rotinas sem erro</small></div>
+      <div class="num"><span style="color:${atrasados?'var(--alerta)':'inherit'}">${atrasados}</span><small>painéis desatualizados</small></div>
+      <div class="num"><span>${ligados}/${E.sistemas.length}</span><small>sistemas ligados</small></div>
+      <div class="num"><span>${E.robos.length}</span><small>robôs à mão</small></div>
+    </div>
+    <h2 style="display:flex;align-items:center;gap:10px">Asaas <span id="asaas-quando" style="text-transform:none;letter-spacing:0;font-weight:400"></span>
+      <button style="margin-left:auto" onclick="carregarAsaas(true)">Atualizar</button></h2>
+    <div class="resumo" id="asaas">${blocoAsaas()}</div>
+    <h2 style="display:flex;align-items:center;gap:10px">Conta Azul <span id="ca-quando" style="text-transform:none;letter-spacing:0;font-weight:400"></span></h2>
+    <div class="resumo" id="ca">${blocoCA()}</div>
+    <div id="total-fin">${blocoTotal()}</div>
+    <h2>Painéis</h2>
+    <div class="grade"><a class="cartao" href="#atendimentos"><b>Atendimentos</b><span class="d">WhatsApp (Multichat360): quantidade, tempos e ranking por atendente</span>
+      <div class="rodape"><span class="selo ok">ao vivo</span></div></a>${E.paineis.map(p => { const [c,t]=frescor(p); return `
+      <a class="cartao" href="#p/${p.id}"><b>${esc(p.nome)}</b><span class="d">${esc(p.desc)}</span>
+      <div class="rodape"><span class="selo ${c}">${esc(t)}</span></div></a>`}).join("")}</div>
+    <h2>Geradores</h2>
+    <div class="grade">${E.geradores.map(g => `
+      <a class="cartao" href="#g/${g.id}"><b>${esc(g.nome)}</b><span class="d">${esc(g.desc)}</span>
+      ${g.existe?"":'<div class="rodape"><span class="selo erro">não encontrado</span></div>'}</a>`).join("")}</div>
+    <h2>Sistemas</h2>
+    <div class="grade">${E.sistemas.map(cartaoSistema).join("")}</div>
+    ${problemas ? `<h2>Atenção</h2><div class="grade">${E.rotinas.filter(r=>situacaoRotina(r)[0]==="erro").map(r=>`
+      <a class="cartao" href="#rotinas"><b>${esc(r.nome)}</b><span class="d">${esc(situacaoRotina(r)[1])}</span></a>`).join("")}</div>` : ""}
+    <h2>Online (claude.ai)</h2>
+    <div class="grade">${E.online.map(o => `
+      <a class="cartao" href="${esc(o.url)}" target="_blank" rel="noopener"><b>${esc(o.nome)} ↗</b><span class="d">${esc(o.desc)}</span></a>`).join("")}</div>`;
+}
+
+let A = null;
+const brl = v => v == null ? "—" : Number(v).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+function blocoAsaas(){
+  if(!A || (!A.dados && !A.erro)) return `<div class="num"><span>…</span><small>buscando no Asaas</small></div>`;
+  if(!A.dados) return `<div class="num" style="grid-column:1/-1"><small style="color:var(--erro)">${esc(A.erro)}</small></div>`;
+  const d = A.dados, n = (q, t) => `${q} ${t}${q === 1 ? "" : "s"}`;
+  return `
+    <div class="num"><span>${brl(d.saldo)}</span><small>saldo em conta</small></div>
+    <div class="num"><span>${brl(d.recebido_mes)}</span><small>recebido no mês (líquido) · ${n(d.n_recebido,"cobrança")}</small></div>
+    <div class="num"><span>${brl(d.a_receber_30)}</span><small>a receber em 30 dias · ${n(d.n_a_receber,"cobrança")}</small></div>
+    <div class="num"><span style="color:${d.vencido?'var(--erro)':'inherit'}">${brl(d.vencido)}</span><small>vencido · ${n(d.n_vencido,"cobrança")}</small></div>
+    ${blocoAtraso(d)}
+    ${A.erro ? `<div class="num" style="grid-column:1/-1"><small style="color:var(--erro)">Última atualização falhou: ${esc(A.erro)}</small></div>` : ""}`;
+}
+function blocoAtraso(d){
+  if(!d.atraso || !d.vencido) return "";
+  const pct = v => d.vencido ? v / d.vencido * 100 : 0;
+  const fmtPct = p => p.toLocaleString("pt-BR",{maximumFractionDigits:p < 10 ? 1 : 0}) + "%";
+  return `<div class="num atraso" style="grid-column:1/-1">
+    <small>Vencido por idade do atraso</small>
+    <div class="barra-atraso" role="img" aria-label="Vencido por idade do atraso">
+      ${d.atraso.map((f,i) => f.valor ? `<i class="f${i}" style="flex:${f.valor}" title="${esc(f.nome)}: ${brl(f.valor)}"></i>` : "").join("")}
+    </div>
+    <div class="faixas">${d.atraso.map((f,i) => `
+      <div><b><i class="f${i}"></i>${esc(f.nome)}</b>
+      <span>${brl(f.valor)}</span><small>${f.qtd} cobrança${f.qtd===1?"":"s"} · ${fmtPct(pct(f.valor))}</small></div>`).join("")}
+    </div></div>`;
+}
+let CA = null;
+function blocoCA(){
+  if(!CA) return `<div class="num"><span>…</span><small>lendo a coleta do Conta Azul</small></div>`;
+  if(CA.erro) return `<div class="num" style="grid-column:1/-1"><small style="color:var(--erro)">${esc(CA.erro)}</small></div>`;
+  const n = (q, t) => `${q} ${t}${q === 1 ? "" : "s"}`;
+  return `
+    <div class="num"><span>${brl(CA.recebido_mes)}</span><small>recebido no mês · ${n(CA.n_recebido,"parcela")}</small></div>
+    <div class="num"><span>${brl(CA.a_receber_mes)}</span><small>a receber até o fim do mês · ${n(CA.n_a_receber,"parcela")}</small></div>
+    <div class="num"><span style="color:${CA.vencido?'var(--erro)':'inherit'}">${brl(CA.vencido)}</span><small>vencido · ${n(CA.n_vencido,"parcela")}</small></div>
+    <div class="num"><small>Sem API: os números vêm da coleta diária pelo Chrome (8h10), sem os lançamentos espelho do Asaas.</small></div>
+    ${blocoAtraso(CA)}
+    ${CA.avisos.length ? `<div class="num" style="grid-column:1/-1"><small style="color:var(--alerta)">${CA.avisos.map(esc).join(" ")}</small></div>` : ""}`;
+}
+function blocoTotal(){
+  if(!A || !A.dados || !CA || CA.erro) return "";
+  const d = A.dados, rec = d.recebido_mes + CA.recebido_mes, ven = d.vencido + CA.vencido;
+  return `<div class="num total-fin"><b>Asaas + Conta Azul</b>
+    <span>${brl(rec)} <small>recebido no mês</small></span>
+    <span style="color:var(--erro)">${brl(ven)} <small>vencido</small></span></div>`;
+}
+async function carregarCA(){
+  CA = await (await fetch("/api/contaazul")).json();
+  pintarAsaas();
+}
+function pintarAsaas(){
+  const ca = $("ca");
+  if(ca){
+    ca.innerHTML = blocoCA();
+    $("ca-quando").textContent = CA && CA.coletado ? "· coleta de " + quando(CA.coletado) : "";
+    $("total-fin").innerHTML = blocoTotal();
+  }
+  const el = $("asaas"); if(!el) return;
+  el.innerHTML = blocoAsaas();
+  const q = $("asaas-quando");
+  if(q) q.textContent = A && A.atualizando ? "· atualizando…" : (A && A.quando ? "· " + new Date(A.quando*1000).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "");
+}
+async function carregarAsaas(forcar){
+  A = await (await fetch("/api/asaas" + (forcar ? "?forcar=1" : ""))).json();
+  pintarAsaas();
+  if(A.atualizando){ clearTimeout(carregarAsaas._t); carregarAsaas._t = setTimeout(() => carregarAsaas(false), 2000); }
+}
+
+function cartaoSistema(s){
+  return `<div class="cartao" onclick="location.hash='s/${s.id}'"><b>${esc(s.nome)}</b><span class="d">${esc(s.desc)} · porta ${s.porta}</span>
+    <div class="rodape"><span class="selo ${s.ligado?"ok":""}">${s.ligado?"ligado":"desligado"}</span>
+    ${s.ligado?"":`<button class="forte" onclick="event.stopPropagation();ligar('${s.id}')">Ligar</button>`}</div></div>`;
+}
+async function ligar(id){
+  const s = E.sistemas.find(x=>x.id===id);
+  await abrir(id, s.nome);
+  aviso(`${s.nome}: ligando… (uns segundos)`);
+  for(let i=0;i<20;i++){ await new Promise(r=>setTimeout(r,1500)); await carregar(); if(E.sistemas.find(x=>x.id===id).ligado) break; }
+  rota();
+}
+
+// ---------------- Atendimentos (Multichat360) ----------------
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const diaBR = s => s.split("-").reverse().slice(0,2).join("/");
+function periodos(){
+  const h = new Date(), d = n => { const x = new Date(h); x.setDate(h.getDate()-n); return x; };
+  const ontem = d(1);
+  return [
+    ["hoje", "Hoje", iso(h), iso(h)],
+    ["ontem", "Ontem", iso(ontem), iso(ontem)],
+    ["7d", "Últimos 7 dias", iso(d(6)), iso(h)],
+    ["mes", "Este mês", iso(new Date(h.getFullYear(), h.getMonth(), 1)), iso(h)],
+    ["mesant", "Mês passado", iso(new Date(h.getFullYear(), h.getMonth()-1, 1)), iso(new Date(h.getFullYear(), h.getMonth(), 0))],
+    ["30d", "Últimos 30 dias", iso(d(29)), iso(h)],
+  ];
+}
+let AT = {id: "mes", inicio: null, fim: null, r: null, carregando: false};
+function duracao(min){
+  if(min == null) return "—";
+  min = Math.round(min);
+  if(min < 60) return `${min} min`;
+  const h = Math.floor(min/60), m = min % 60;
+  if(h >= 48) return `${Math.floor(h/24)}d ${h % 24}h`;
+  return `${h}h${m ? String(m).padStart(2,"0") : ""}`;
+}
+function variacao(atual, antes, menorMelhor){
+  if(atual == null || !antes) return "";
+  const p = (atual - antes) / antes * 100;
+  if(Math.abs(p) < 0.5) return "igual ao período anterior";
+  const melhor = menorMelhor ? p < 0 : p > 0;
+  return `${p > 0 ? "▲" : "▼"} ${Math.abs(p).toLocaleString("pt-BR",{maximumFractionDigits:0})}% vs período anterior${menorMelhor ? (melhor ? " (mais rápido)" : " (mais lento)") : ""}`;
+}
+function telaAtendimentos(){
+  const ps = periodos();
+  const sel = ps.find(p => p[0] === AT.id);
+  if(sel){ AT.inicio = sel[2]; AT.fim = sel[3]; }
+  $("v-atendimentos").innerHTML = `
+    <h1>Atendimentos</h1>
+    <p class="sub">WhatsApp do escritório pela Multichat360 · só leitura, direto da plataforma <span id="at-quando"></span></p>
+    <div class="periodo">
+      ${ps.map(p => `<button class="${p[0]===AT.id?"ativo":""}" onclick="AT.id='${p[0]}';telaAtendimentos()">${p[1]}</button>`).join("")}
+      <span style="margin-left:8px;color:var(--suave);font-size:12.5px">de</span>
+      <input type="date" id="at-ini" value="${AT.inicio}" max="${iso(new Date())}">
+      <span style="color:var(--suave);font-size:12.5px">a</span>
+      <input type="date" id="at-fim" value="${AT.fim}" max="${iso(new Date())}">
+      <button onclick="AT.id='livre';AT.inicio=$('at-ini').value;AT.fim=$('at-fim').value;telaAtendimentos()">Ver</button>
+      <button style="margin-left:auto" onclick="carregarAtendimentos(true)">Atualizar</button>
+    </div>
+    <div id="at-corpo"><div class="num"><span>…</span><small>buscando na Multichat</small></div></div>`;
+  carregarAtendimentos(false);
+}
+async function carregarAtendimentos(forcar){
+  const pedido = AT.inicio + AT.fim;
+  const r = await (await fetch(`/api/multichat?inicio=${AT.inicio}&fim=${AT.fim}${forcar?"&forcar=1":""}`)).json();
+  if(pedido !== AT.inicio + AT.fim) return;  // trocou de período enquanto buscava
+  AT.r = r; pintarAtendimentos();
+}
+function pintarAtendimentos(){
+  const c = $("at-corpo"); if(!c || !AT.r) return;
+  const r = AT.r, d = r.dados;
+  const q = $("at-quando");
+  if(q) q.textContent = r.quando ? "· atualizado às " + new Date(r.quando*1000).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+  if(!d){ c.innerHTML = `<div class="num"><small style="color:var(--erro)">${esc(r.erro)}</small></div>`; return; }
+  const g = d.geral, a = d.anterior;
+  const abertos = d.pessoas.reduce((s,p) => s + p.em_atendimento + p.pendentes, 0);
+  const aguardando = d.pessoas.reduce((s,p) => s + p.pendentes, 0);
+  const um = d.inicio === d.fim;
+  const titulo = um ? diaBR(d.inicio) : `${diaBR(d.inicio)} a ${diaBR(d.fim)}`;
+  const antes = d.anterior_inicio === d.anterior_fim ? diaBR(d.anterior_inicio) : `${diaBR(d.anterior_inicio)} a ${diaBR(d.anterior_fim)}`;
+  const maxDia = Math.max(1, ...d.dias.map(x => x.qtd));
+  const maxFila = Math.max(1, ...d.filas.map(x => x.qtd));
+  const maxP = Math.max(1, ...d.pessoas.map(p => p.total));
+  const passo = Math.ceil(d.dias.length / 16);
+  c.innerHTML = `
+    ${r.erro ? `<div class="num" style="margin-bottom:12px"><small style="color:var(--erro)">Última atualização falhou: ${esc(r.erro)}</small></div>` : ""}
+    <div class="resumo" id="at-kpis">
+      <div class="num"><span>${g.total}</span><small>atendimentos · ${g.receptivos} chegaram, ${g.ativos} iniciados pelo escritório</small><span class="comp">${variacao(g.total, a.total)}</span></div>
+      <div class="num"><span>${duracao(g.tme)}</span><small>espera média até a 1ª resposta</small><span class="comp">${variacao(g.tme, a.tme, true)}</span></div>
+      <div class="num"><span>${duracao(g.tma)}</span><small>tempo médio do ticket aberto (da abertura ao encerramento)</small><span class="comp">${variacao(g.tma, a.tma, true)}</span></div>
+      <div class="num"><span style="color:${aguardando?'var(--alerta)':'inherit'}">${abertos}</span><small>em aberto · ${aguardando} aguardando atendente</small></div>
+      <div class="num"><span>${g.contatos_novos}</span><small>contatos novos</small><span class="comp">${variacao(g.contatos_novos, a.contatos_novos)}</span></div>
+    </div>
+    <p class="sub" style="margin:8px 0 0;font-size:12px">${esc(titulo)} · comparado com ${esc(antes)}</p>
+
+    <h2>Por atendente</h2>
+    <div class="tabela"><table><thead><tr>
+      <th>Atendente</th><th class="n">Atendimentos</th><th class="n">Resolvidos</th><th class="n">Em aberto</th>
+      <th class="n">1ª resposta</th><th class="n">Tempo médio</th><th class="n">Mais longo</th></tr></thead><tbody>
+      ${d.pessoas.length ? d.pessoas.map(p => `<tr class="${p.sem_atendente?"fila":""}">
+        <td><b style="font-weight:${p.sem_atendente?400:600}">${esc(p.nome)}</b></td>
+        <td class="n">${p.total}<span class="mini" style="width:${Math.round(p.total/maxP*80)}px"></span></td>
+        <td class="n">${p.resolvidos}</td>
+        <td class="n">${p.em_atendimento + p.pendentes || "—"}</td>
+        <td class="n">${duracao(p.tme)}</td>
+        <td class="n">${duracao(p.tma)}</td>
+        <td class="n">${duracao(p.maior)}</td></tr>`).join("")
+      : `<tr><td colspan="7" style="color:var(--suave)">Nenhum atendimento no período.</td></tr>`}
+    </tbody></table></div>
+
+    <div class="duas" style="margin-top:28px">
+      <div class="grafico"><b>Atendimentos por dia</b><br><small>fins de semana mais claros · passe o mouse para ver o número</small>
+        <div class="colunas">${d.dias.map(x => {
+          const dt = new Date(x.dia+"T12:00"), fds = dt.getDay() === 0 || dt.getDay() === 6;
+          const nome = dt.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
+          return `<div class="c${fds?" fds":""}" data-dica="${esc(nome)}: ${x.qtd} atendimento${x.qtd===1?"":"s"}"><i style="height:${x.qtd/maxDia*100}%"></i></div>`}).join("")}</div>
+        <div class="eixo">${d.dias.map((x,i) => `<span>${i % passo === 0 ? diaBR(x.dia) : ""}</span>`).join("")}</div>
+      </div>
+      <div class="grafico"><b>Por fila</b><br><small>quantos atendimentos entraram em cada fila</small>
+        <div class="hbar">${d.filas.length ? d.filas.map(f => `
+          <b title="${esc(f.nome)}">${esc(f.nome)}</b><div class="t"><i style="width:${f.qtd/maxFila*100}%"></i></div>
+          <span>${f.qtd} · ${(f.qtd/(g.total||1)*100).toLocaleString("pt-BR",{maximumFractionDigits:0})}%</span>`).join("")
+          : `<span style="grid-column:1/-1;color:var(--suave)">Sem atendimentos no período.</span>`}</div>
+      </div>
+    </div>
+
+    <h2>Qualidade</h2>
+    <div class="num"><small>Ainda sem dados. O token atual da Multichat lê as estatísticas, mas não as conversas, e a plataforma
+      não tem pesquisa de satisfação pela API. Quando houver acesso às conversas (um usuário só de relatórios ou um token
+      do suporte), esta parte passa a avaliar cordialidade, clareza, rapidez e se a dúvida foi resolvida.</small></div>
+    <p class="sub" style="margin-top:14px;font-size:12px">"Tempo médio" conta todo o tempo em que o ticket ficou aberto, inclusive esperando o cliente
+      responder; não é o tempo de conversa. "1ª resposta" é o tempo da chegada até o primeiro retorno do escritório.</p>`;
+  c.querySelectorAll("[data-dica]").forEach(el => {
+    el.onmousemove = e => { const t = $("dica"); t.textContent = el.dataset.dica; t.style.left = (e.clientX + 12) + "px"; t.style.top = (e.clientY - 30) + "px"; t.classList.add("v"); };
+    el.onmouseleave = () => $("dica").classList.remove("v");
+  });
+}
+
+function rotinas(){
+  $("v-rotinas").innerHTML = `<h1>Rotinas agendadas</h1><p class="sub">O que o Mac roda sozinho. Se o Mac estiver desligado ou dormindo no horário, a rotina não roda.</p>
+  <div class="tabela"><table><thead><tr><th>Rotina</th><th>Horários</th><th>Situação</th><th>Último registro</th></tr></thead><tbody>
+  ${E.rotinas.map(r => { const [c,t]=situacaoRotina(r); return `<tr>
+    <td><b>${esc(r.nome)}</b></td>
+    <td>${esc(r.horarios.length>4 ? r.horarios[0]+" a "+r.horarios.at(-1)+" ("+r.horarios.length+"×)" : r.horarios.join(", ")||"—")}</td>
+    <td><span class="selo ${c}">${esc(t)}</span>${r.erro.length?`<pre>${esc(r.erro.join("\n"))}</pre>`:""}</td>
+    <td>${esc(quando(r.ultimo_log))}${r.log.length?`<details><summary>ver log</summary><pre>${esc(r.log.join("\n"))}</pre></details>`:""}</td>
+  </tr>`}).join("")}</tbody></table></div>`;
+}
+
+function robos(){
+  $("v-robos").innerHTML = `<h1>Robôs</h1><p class="sub">Cada botão faz o mesmo que o atalho da Área de Trabalho: abre o robô no Terminal.</p>
+  <div class="grade">${E.robos.map(r => `<div class="cartao" style="cursor:default"><b>${esc(r.nome)}</b><span class="d">${esc(r.desc)}</span>
+    <div class="rodape">${r.existe?`<button class="forte" onclick="abrir('${r.id}','${esc(r.nome)}')">Rodar</button>
+    <button onclick="post('/pasta',{id:'${r.id}'})">Pasta</button>`:'<span class="selo erro">não encontrado</span>'}</div></div>`).join("")}</div>`;
+}
+
+let visorId = null;
+function visor(tipo, id){
+  let nome, url, existe = true;
+  if(tipo === "s"){
+    const s = E.sistemas.find(x=>x.id===id); if(!s) return false;
+    if(!s.ligado){ mostrar("v-inicio"); $("v-inicio").innerHTML = `<h1>${esc(s.nome)}</h1><p class="sub">${esc(s.desc)} · está desligada.</p><div class="grade">${cartaoSistema(s)}</div>`; return true; }
+    nome = s.nome; url = `http://127.0.0.1:${s.porta}`;
+  } else {
+    const x = (tipo==="p"?E.paineis:E.geradores).find(x=>x.id===id); if(!x) return false;
+    nome = x.nome; url = `/ver/${x.id}/`; existe = x.existe;
+  }
+  if(!existe){ mostrar("v-inicio"); $("v-inicio").innerHTML = `<h1>${esc(nome)}</h1><p class="sub">Não encontrei o arquivo no Drive. O Drive está sincronizado?</p>`; return true; }
+  $("visor-nome").textContent = nome;
+  $("visor-pasta").hidden = tipo === "s";
+  if(visorId !== tipo+id){ $("visor-quadro").src = url; visorId = tipo+id; }
+  $("visor-aba").onclick = () => window.open(url, "_blank");
+  $("visor-recarregar").onclick = () => { $("visor-quadro").src = url; };
+  $("visor-pasta").onclick = () => post("/pasta",{id});
+  mostrar("visor");
+  return true;
+}
+
+function mostrar(vista){ for(const v of document.querySelectorAll(".vista")) v.hidden = v.id !== vista; }
+
+function rota(){
+  const h = location.hash.slice(1) || "inicio";
+  document.querySelectorAll("nav a[data-r]").forEach(a => a.classList.toggle("ativo", a.dataset.r === h));
+  if(h === "atendimentos"){ if($("v-atendimentos").hidden || !AT.r) telaAtendimentos(); return mostrar("v-atendimentos"); }
+  if(h === "rotinas"){ rotinas(); return mostrar("v-rotinas"); }
+  if(h === "robos"){ robos(); return mostrar("v-robos"); }
+  const [tipo, id] = h.split("/");
+  if(id && visor(tipo, id)) return;
+  inicio(); pintarAsaas(); mostrar("v-inicio");
+}
+
+async function carregar(){ E = await (await fetch("/api/estado")).json(); }
+(async () => {
+  await carregar(); menu(); rota(); carregarAsaas(false); carregarCA();
+  addEventListener("hashchange", rota);
+  setInterval(async () => { await carregar(); carregarAsaas(false); carregarCA(); if($("visor").hidden) rota(); }, 60000);
+})();
+</script>
+</body>
+</html>

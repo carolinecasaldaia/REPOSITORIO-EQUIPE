@@ -287,10 +287,19 @@ def cmd_duplicar(meta, args):
     falhas = []
 
     def copiar_anuncios(conjunto_origem, conjunto_novo):
-        for ad in meta.todos(f"{conjunto_origem}/ads", fields="id,name"):
+        # Não usa /copies: com o app em modo de desenvolvimento o Meta recusa, porque
+        # a cópia geraria um post novo. Criar o anúncio reaproveitando o MESMO
+        # criativo (mesmo post, com curtidas e comentários) funciona.
+        for ad in meta.todos(f"{conjunto_origem}/ads",
+                             fields="id,name,account_id,creative{id},tracking_specs,conversion_domain"):
             try:
-                r = meta.post(f"{ad['id']}/copies", adset_id=conjunto_novo, status_option="PAUSED")
-                print(f"      anúncio {ad['name']} -> {r.get('copied_ad_id')}")
+                params = {"name": ad["name"], "adset_id": conjunto_novo, "status": "PAUSED",
+                          "creative": {"creative_id": ad["creative"]["id"]}}
+                for campo in ("tracking_specs", "conversion_domain"):
+                    if ad.get(campo):
+                        params[campo] = ad[campo]
+                r = meta.post(f"act_{ad['account_id']}/ads", **params)
+                print(f"      anúncio {ad['name']} -> {r.get('id')}")
             except ErroMeta as e:
                 falhas.append((ad["name"], ad["id"], str(e)))
                 print(f"      [!] anúncio {ad['name']}: {e}")
@@ -301,9 +310,30 @@ def cmd_duplicar(meta, args):
             params["campaign_id"] = campanha_nova
         else:
             params["rename_options"] = renomear
-        r = meta.post(f"{conjunto['id']}/copies", **params)
-        print(f"    conjunto {conjunto['name']} -> {r.get('copied_adset_id')}")
-        copiar_anuncios(conjunto["id"], r["copied_adset_id"])
+        try:
+            novo = meta.post(f"{conjunto['id']}/copies", **params)["copied_adset_id"]
+        except ErroMeta as e:
+            if "atribuição" not in str(e) and "attribution" not in str(e):
+                raise
+            novo = recriar_conjunto(conjunto["id"], campanha_nova)
+        print(f"    conjunto {conjunto['name']} -> {novo}")
+        copiar_anuncios(conjunto["id"], novo)
+
+    def recriar_conjunto(origem, campanha_nova):
+        """Conjunto antigo com janela de atribuição que o Meta não aceita mais em
+        conjunto novo: cria do zero com as mesmas configurações e janela de 1 dia."""
+        campos = ("name,account_id,campaign_id,optimization_goal,billing_event,bid_strategy,"
+                  "bid_amount,daily_budget,lifetime_budget,targeting,promoted_object,"
+                  "destination_type,end_time,pacing_type")
+        o = meta.get(origem, fields=campos)
+        params = {k: v for k, v in o.items()
+                  if k not in ("id", "account_id", "campaign_id", "end_time") and v not in (None, "")}
+        params.update(campaign_id=campanha_nova or o["campaign_id"], status="PAUSED",
+                      attribution_spec=[{"event_type": "CLICK_THROUGH", "window_days": 1}])
+        if not campanha_nova:
+            params["name"] = o["name"] + " — Cópia"
+        print(f"    (janela de atribuição antiga em {o['name']}: recriando com 1 dia após o clique)")
+        return meta.post(f"act_{o['account_id']}/adsets", **params)["id"]
 
     if tipo == "anúncio":
         r = meta.post(f"{args.id}/copies", status_option="PAUSED", rename_options=renomear)

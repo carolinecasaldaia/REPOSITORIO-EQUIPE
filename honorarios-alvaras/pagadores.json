@@ -1,0 +1,136 @@
+{
+  "_como_usar": "Regras informadas pela Caroline. 'padrao' é procurado (sem acento, maiúsculas) na descrição do crédito. 'categoria' troca a categoria automática; 'processo' (20 dígitos) amarra o crédito a esse processo como Confirmado. Categorias especiais: Pessoal (fora das receitas), Extrajudicial (honorário sem processo), Parceiro, Processo (recebimento de processo ainda não identificado). Uma regra também pode casar por 'data' (AAAA-MM-DD) e 'valor' exatos, para um crédito específico.",
+  "regras": [
+    {
+      "data": "2026-09-28",
+      "valor": 8139.99,
+      "categoria": "Judicial",
+      "processo": "07020508820258020053",
+      "nota": "alvará do Jaedson Silva de Araujo (confirmado pela Caroline)"
+    },
+    {
+      "data": "2026-10-22",
+      "valor": 2164.99,
+      "categoria": "Judicial",
+      "processo": "07001002620248020038",
+      "nota": "alvará do Jonas José da Silva (R$ 2.094,96 + correção da conta judicial); não é do Givaldo"
+    },
+    {
+      "data": "2025-04-06",
+      "valor": 1879.66,
+      "categoria": "Judicial",
+      "processo": "07020590420238020091",
+      "nota": "alvará da cliente Vitoria Dias Albuquerque"
+    },
+    {
+      "data": "2025-11-24",
+      "valor": 4654.04,
+      "categoria": "Judicial",
+      "processo": "07066762520198020001",
+      "nota": "alvará da cliente Marcely Islayne"
+    },
+    {
+      "data": "2025-03-07",
+      "valor": 818.56,
+      "categoria": "Pessoal",
+      "nota": "alvará de processo pessoal (Felipe)"
+    },
+    {
+      "data": "2025-08-12",
+      "valor": 6054.32,
+      "categoria": "Processo",
+      "nota": "recebido de processo (número não identificado)"
+    },
+    {
+      "data": "2025-12-14",
+      "valor": 3603.34,
+      "categoria": "Processo",
+      "nota": "recebido de processo (número não identificado)"
+    },
+    {
+      "data": "2025-12-18",
+      "valor": 1584.1,
+      "categoria": "Processo",
+      "nota": "recebido de processo (número não identificado)"
+    },
+    {
+      "data": "2026-05-25",
+      "valor": 3914.15,
+      "categoria": "Processo",
+      "nota": "recebido de processo (número não identificado)"
+    },
+    {
+      "data": "2026-06-19",
+      "valor": 10714.63,
+      "categoria": "Processo",
+      "nota": "recebido de processo (número não identificado)"
+    },
+    {
+      "padrao": "ROTA 82",
+      "categoria": "Pessoal",
+      "nota": "empresa do marido"
+    },
+    {
+      "padrao": "FELIPE MENDES MONTARGIL",
+      "categoria": "Pessoal",
+      "nota": "pessoal"
+    },
+    {
+      "padrao": "HERON RAMOS MONTARGIL",
+      "categoria": "Pessoal",
+      "nota": "pessoal"
+    },
+    {
+      "padrao": "RAFAEL NEVES RODRIGUES",
+      "categoria": "Pessoal",
+      "nota": "venda do carro"
+    },
+    {
+      "padrao": "VAKINHA",
+      "categoria": "Pessoal",
+      "nota": "pessoal"
+    },
+    {
+      "padrao": "^C6$",
+      "categoria": "Pessoal",
+      "nota": "pessoal"
+    },
+    {
+      "padrao": "SALARIOS",
+      "categoria": "Interna",
+      "nota": "dinheiro para pagar os salários dos colaboradores"
+    },
+    {
+      "padrao": "^ENTRADA PIX PIX RECEBIDO( C6)?$|^ENTRADAS RECEBIMENTO DE TED$",
+      "categoria": "Não identificado",
+      "nota": "crédito sem nome no C6; Caroline não identificou"
+    },
+    {
+      "padrao": "JONAS ALVES DA SILVA",
+      "categoria": "Parceiro",
+      "nota": "ex-parceiro"
+    },
+    {
+      "padrao": "GALETERIA|SAO EXPEDITO|GALETERIA S E",
+      "categoria": "Extrajudicial",
+      "nota": "cliente extrajudicial (sem processo)"
+    },
+    {
+      "padrao": "ROMARIO ALVES DA SILVA",
+      "categoria": "Processo",
+      "nota": "processo já extinto, conduzido em conjunto com parceiro (fora das listas atuais)"
+    },
+    {
+      "padrao": "ARTHUR SEBASTIAO",
+      "categoria": "Processo",
+      "processo": "07013524420248020077",
+      "nota": "réu na execução 8º JEC"
+    },
+    {
+      "padrao": "KAMAZIANA",
+      "categoria": "Processo",
+      "processo": "00337668420244058000",
+      "nota": "recebimento de processo"
+    }
+  ]
+}

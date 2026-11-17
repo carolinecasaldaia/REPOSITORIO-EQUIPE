@@ -6,6 +6,7 @@ nenhum dado de cliente entra aqui (veja `.gitignore`).
 
 | Pasta | O que é | Origem no Drive (`Documentos Escritório /`) |
 |---|---|---|
+| `central` | **Central do Escritório**: abre painéis, geradores, robôs e rotinas num só lugar (local, :8500) | — (atalho em `~/Desktop/CLAUDE`) |
 | `onboarding/gerador-onboarding` | Gera o onboarding do cliente | `A - REVISIONAL/A - COMERCIAL/ONBOARDING/GERADOR ONBOARDING` |
 | `onboarding/baixar-autentique` | Baixa contratos assinados do Autentique | `…/ONBOARDING/BAIXAR AUTENTIQUE` |
 | `onboarding/separador-autentique` | Separa os documentos do Autentique | `…/ONBOARDING/SEPARADOR AUTENTIQUE` |
@@ -18,6 +19,7 @@ nenhum dado de cliente entra aqui (veja `.gitignore`).
 | `gerador-contratos` | Gera contrato, procuração e declarações | `A - REVISIONAL/A - COMERCIAL/GERADOR CONTRATOS` |
 | `calculadora-revisional` | Calculadora revisional | `A - REVISIONAL/A - COMERCIAL/CALCULADORA REVISIONAL` |
 | `gerador-peticao-revisional` | Gera a petição revisional | `A - REVISIONAL/A - DOCUMENTOS/GERADOR PETIÇÃO REVISIONAL` |
+| `astrea` | Integração geral com o Astrea (consultas e gravações; cumprimento de sentença) | só no repositório (roda daqui) |
 | `produtividade-astrea` | Ranking do escritório (atividades do ano no Astrea, por pessoa) | `EMPRESA/CLAUDE/PRODUTIVIDADE - PRAZOS ASTREA` |
 | `radar-ba` | Radar B&A (monitoramento nos tribunais) | `MAPEAMENTO TJS/radar-ba` |
 | `cm-calculadora` | Calculadora CM / anonimização de pareceres | `~/cm-calculadora` (fora do Drive) |

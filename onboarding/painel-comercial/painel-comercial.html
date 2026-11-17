@@ -94,6 +94,7 @@ tfoot td{font-weight:600;border-bottom:none}
 .p-ok{background:var(--accent-soft);color:var(--accent)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-n{background:var(--neutral-soft);color:var(--muted)}
 .estado{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
 .aviso{margin-top:12px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:13px;max-width:80ch}
+.permitir{margin-top:10px;font:inherit;font-weight:600;background:var(--accent);color:var(--surface);border:0;border-radius:8px;padding:9px 16px;cursor:pointer}
 .foot{color:var(--muted);font-size:12.5px;display:flex;flex-direction:column;gap:8px;max-width:95ch}
 .fontes{display:flex;flex-wrap:wrap;gap:8px}
 /* Parcelas recebidas: total, do mês, atrasadas, adiantadas */
@@ -179,6 +180,7 @@ table.rec-tab{min-width:640px}
     <p class="sub">Honorários, entradas, parcelamento e origem dos clientes desde fevereiro de 2023. De agosto de 2026 em diante, lidos direto dos contratos assinados e atualizados de hora em hora, das 8h40 às 20h40.</p>
     <div class="meta" id="atualizado"></div>
     <div class="aviso" id="aviso" role="status" hidden></div>
+    <button class="permitir" id="permitir" type="button" hidden>Permitir Google Drive</button>
   </header>
 
   <div id="app" hidden>
@@ -875,7 +877,29 @@ const AVISO_DRIVE = {
 
 (async () => {
   const estado = document.getElementById("estado");
-  const [db, mcp] = window.claude ? await Promise.all([window.claude.use("db"), window.claude.use("mcp")]) : [null, null];
+  const [db, mcp, perm] = window.claude ? await Promise.all([window.claude.use("db"), window.claude.use("mcp"), window.claude.use("permissions")]) : [null, null, null];
+
+  // Sem Drive o painel caía calado na cópia guardada (10/11/2026, painel do Vinicius).
+  // Agora diz o motivo e, quando dá, oferece o botão para permitir o Drive.
+  const botao = document.getElementById("permitir");
+  if (window.claude && !mcp){
+    aviso("Este painel não conseguiu usar o seu Google Drive nesta tela, por isso mostra a cópia guardada (pode estar desatualizada). Abra o painel pelo convite que chegou no seu e-mail do escritório, entrando no claude.ai com essa mesma conta, e recarregue.");
+  } else if (mcp && perm){
+    const st = await perm.state("mcp").catch(() => null);
+    if (st === "denied") aviso("O Google Drive foi recusado para este painel, por isso ele mostra a cópia guardada. Libere no menu Permissões do painel (no topo da tela do Claude) e recarregue.");
+    if (st === "prompt"){
+      botao.hidden = false;
+      botao.onclick = async () => {
+        const r = await perm.request(["mcp"]).catch(() => ({}));
+        if (r.mcp === "granted") location.reload();
+        else aviso("Sem permissão para o Google Drive o painel mostra a cópia guardada, que pode estar desatualizada.");
+      };
+    }
+  }
+  setTimeout(() => {
+    if (FONTE !== "drive" && document.getElementById("aviso").hidden)
+      aviso("Ainda não consegui ler o Google Drive. Se apareceu um pedido de permissão do Claude, clique em Permitir. Enquanto isso, o painel mostra a cópia guardada, que pode estar desatualizada.");
+  }, 12000);
 
   // 1) Google Drive (fonte principal)
   if (mcp){
@@ -884,7 +908,7 @@ const AVISO_DRIVE = {
         let d = null;
         try { d = lerArquivo(ev.result.payload); } catch(e) { d = null; }
         if (!d || !Array.isArray(d.contratos)){ if (FONTE !== "drive") aviso("O arquivo de dados do Google Drive veio num formato inesperado; mostrando a cópia guardada no painel."); return; }
-        FONTE = "drive"; ATUALIZADO = d.gerado_em || null;
+        FONTE = "drive"; ATUALIZADO = d.gerado_em || null; botao.hidden = true;
         ROWS = d.contratos; MESES = d.meses || {}; REC = d.recebimentos || {};
         aviso(""); pronto();
       } else {

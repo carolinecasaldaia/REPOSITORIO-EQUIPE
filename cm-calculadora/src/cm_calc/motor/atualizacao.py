@@ -358,7 +358,8 @@ def _percentual_fixo(crit: CriterioJuros, a: date, b: date) -> Decimal:
 def _taxa_serie_mes(crit: CriterioJuros, comp: Competencia, series: dict[str, SerieMensal],
                     correcao_mes: dict[Competencia, CriterioCorrecao]) -> Decimal:
     principal = _serie(series, crit.serie)
-    if principal.embute_correcao:
+    # Selic − IPCA (juros legais do art. 406 do CC) já desconta a correção: pode conviver com o IPCA.
+    if principal.embute_correcao and crit.tipo is not TipoJuros.SERIE_MENOS_SERIE:
         cc = correcao_mes.get(comp)
         if cc is not None and cc.serie is not None:
             raise CriterioInvalido(

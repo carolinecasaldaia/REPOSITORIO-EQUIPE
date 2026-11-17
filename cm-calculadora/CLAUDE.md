@@ -22,6 +22,11 @@ Uso interno — Caroline Macedo Advocacia. Este diretório contém **somente có
 - Nunca alterar o motor para reproduzir o parecer. Divergências são explicadas por cenários de diagnóstico (convenção de dias, regime, arredondamento, regra de meses/índice) — "COMPROVADO" só quando o cenário reproduz a célula.
 - Pasta: `~/CM-Calculos-Dados/validacao/<ID>/` (parecer anonimizado; varredura local de dados pessoais antes de executar).
 
+## Cumprimento de sentença (sem perito)
+- `servicos/cumprimento.py` + `uv run cm-calc cumprimento FICHA.json --indices PASTA --saida PASTA` (formato em `docs/CUMPRIMENTO.md`).
+- Séries oficiais: `ferramentas/baixar_series_bcb.py` (fora de `src/`: o pacote não acessa a rede).
+- Agente: `~/.claude/agents/macedo-liquidacao.md`.
+
 ## Comandos
 - Testes: `uv run pytest`
 - Fluxo do caso: `uv run cm-calc importar|extrair|quadro|confirmar|rejeitar|pagamentos|ciencia|status|pacote` (ver `cm_calc/cli.py`)

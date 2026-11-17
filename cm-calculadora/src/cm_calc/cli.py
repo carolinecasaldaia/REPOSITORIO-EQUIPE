@@ -12,6 +12,8 @@
                                 grava pacote pseudonimizado para leitura autorizada pelo Claude
   validacao preparar|verificar|executar ID [--anonimizacao-confirmada-por NOME]
                                 validação pericial (Fase 5)
+  cumprimento FICHA.json --indices PASTA --saida PASTA
+                                cumprimento/liquidação de sentença a partir da ficha (docs/CUMPRIMENTO.md)
 """
 
 from __future__ import annotations
@@ -42,6 +44,8 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("status"); s.add_argument("caso")
     s = sub.add_parser("pacote"); s.add_argument("caso"); s.add_argument("--por", required=True)
     s.add_argument("--finalidade", required=True); s.add_argument("--itens", nargs="+", required=True)
+    s = sub.add_parser("cumprimento"); s.add_argument("ficha", type=Path)
+    s.add_argument("--indices", type=Path, required=True); s.add_argument("--saida", type=Path, required=True)
     s = sub.add_parser("validacao")
     s.add_argument("acao", choices=["preparar", "ficticio", "importar-original", "termos", "anonimizar",
                                     "abrir-conferencia", "listar-anonimizados", "liberar", "revogar", "verificar", "executar",
@@ -57,6 +61,21 @@ def main(argv: list[str] | None = None) -> int:
                    help="declaração expressa de que a cópia foi conferida (exigida para liberar)")
     a = pr.parse_args(argv)
 
+    if a.cmd == "cumprimento":
+        from .servicos import cumprimento as cs
+        try:
+            r = cs.calcular(cs.carregar_ficha(a.ficha), cs.carregar_series_csv(a.indices))
+        except (ValueError, FileNotFoundError) as e:
+            print(f"Cálculo bloqueado (pendência):\n{e}", file=sys.stderr)
+            return 2
+        nome = f"memoria-{r.ficha.caso}-{r.executado_em:%Y%m%d-%H%M%S}"
+        xlsx = cs.planilha(r, a.saida / f"{nome}.xlsx")
+        md = a.saida / f"{nome}.md"
+        md.write_text(cs.markdown(r), encoding="utf-8")
+        (a.saida / f"{nome}.json").write_text(r.model_dump_json(indent=1), encoding="utf-8")
+        print(cs.markdown(r))
+        print(f"Planilha: {xlsx}\nResumo: {md}")
+        return 0
     if a.cmd == "validacao":
         try:
             return _validacao(a)

@@ -1,0 +1,776 @@
+<title>Ranking do Escritório</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: placar do ano — números do ano, ranking com a produção de cada pessoa, prazos em dia, mês a mês, pendências, prazos mais feitos */
+/* Cores do escritório (marrom da logo), as mesmas do Painel Comercial. Tipos de atividade usam a paleta já validada lá. */
+:root{
+  --bg:#faf7f3; --surface:#ffffff; --ink:#2b1d13; --muted:#75604f; --line:#e9e0d6;
+  --accent:#6c3813; --accent-soft:#f4ebe2; --warn:#a8402a; --warn-soft:#f8e6df; --neutral-soft:#f0ebe5;
+  --t-prazo:#8b4a1c; --t-tarefa:#3a62c4; --t-aud:#1f8a6e; --t-evento:#6a4fc0;
+  --ok:#8b4a1c; --late:#c2306a;
+  --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",-apple-system,"Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17110c; --surface:#211913; --ink:#f2e9e1; --muted:#b5a393; --line:#3a2d23;
+  --accent:#d39a6c; --accent-soft:#33251b; --warn:#ef8a6e; --warn-soft:#3d2219; --neutral-soft:#2b211a;
+  --t-prazo:#a8643a; --t-tarefa:#5b82e0; --t-aud:#45a88a; --t-evento:#8a70e0;
+  --ok:#a8643a; --late:#e86080; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17110c; --surface:#211913; --ink:#f2e9e1; --muted:#b5a393; --line:#3a2d23;
+  --accent:#d39a6c; --accent-soft:#33251b; --warn:#ef8a6e; --warn-soft:#3d2219; --neutral-soft:#2b211a;
+  --t-prazo:#a8643a; --t-tarefa:#5b82e0; --t-aud:#45a88a; --t-evento:#8a70e0;
+  --ok:#a8643a; --late:#e86080; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(28px,4.4vw,40px);margin:4px 0 6px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:500;font-size:20px;margin:0;text-wrap:balance}
+.sub{color:var(--muted);max-width:72ch;margin:0}
+.topo{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:end}
+.fresco{font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+.aviso{background:var(--warn-soft);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--surface);padding:15px 18px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi b{font-family:var(--mono);font-weight:500;font-size:24px}
+.kpi small{font-size:11.5px;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:12px}
+.sec-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;font-size:12.5px;border:0;background:transparent;color:var(--muted);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.seg button:focus-visible,.linha:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* ranking */
+.rank{display:flex;flex-direction:column}
+.linha{display:grid;grid-template-columns:28px minmax(120px,190px) minmax(0,1fr) 64px;gap:12px;align-items:center;padding:9px 4px;border-top:1px solid var(--line)}
+.linha:first-child{border-top:0}
+.pos{font-family:var(--mono);color:var(--muted);font-size:13px;text-align:right}
+.quem{display:flex;flex-direction:column;min-width:0}
+.quem b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quem small{color:var(--muted);font-size:11.5px}
+.chip{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--neutral-soft);color:var(--muted);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+.barra{display:flex;height:16px;gap:2px;min-width:0}
+.barra span{display:block;height:100%;min-width:2px}
+.barra span:first-child{border-radius:3px 0 0 3px}
+.barra span:last-child{border-radius:0 3px 3px 0}
+.barra span:only-child{border-radius:3px}
+.linha2{grid-template-columns:minmax(96px,130px) minmax(0,1fr) 48px}
+.tot{font-family:var(--mono);font-size:15px;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:620px){
+  .linha{grid-template-columns:24px minmax(0,1fr) 54px;row-gap:6px}
+  .linha .barra{grid-column:2 / -1;grid-row:2}
+  .linha2{grid-template-columns:minmax(0,1fr) 54px}
+  .linha2 .barra{grid-column:1 / -1}
+}
+/* tabela */
+.tabwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td:first-child{font-family:var(--body)}
+td.alerta{color:var(--warn);font-weight:500}
+/* svg */
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+svg .lbl{fill:var(--ink)}
+svg .grade{stroke:var(--line);stroke-width:1}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.45;padding:7px 10px;border-radius:6px;max-width:260px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tip b{font-weight:600}
+.nota{font-size:12.5px;color:var(--muted);max-width:80ch;margin:0}
+ol.top{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+ol.top li{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 40px;gap:10px;align-items:center;font-size:13px}
+ol.top li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ol.top .tr{background:var(--neutral-soft);height:10px;border-radius:3px;overflow:hidden}
+ol.top .fi{background:var(--t-prazo);height:100%;display:block;border-radius:3px}
+ol.top .n{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+.pessoas-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.pessoas-top h3{font-size:13px;font-weight:600;margin:0 0 6px}
+.pessoas-top ul{margin:0;padding:0;list-style:none;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.pessoas-top li{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+.pessoas-top li b{font-family:var(--mono);font-weight:400;color:var(--ink)}
+/* dia a dia */
+.diactl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.diactl button,.diactl input{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:5px 10px;cursor:pointer}
+.diactl input{font-family:var(--mono);cursor:text}
+.diactl button:disabled{opacity:.4;cursor:default}
+.diactl button:focus-visible,.diactl input:focus-visible,svg .ponto:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dia-titulo{font-family:var(--display);font-size:17px;font-weight:500;margin:0}
+.dia-titulo::first-letter{text-transform:uppercase}
+table.lista{min-width:560px}
+table.lista td,table.lista th{text-align:left}
+table.lista td{font-family:var(--body)}
+#dia-lista td:nth-child(4){white-space:normal;min-width:220px}
+table.lista td:first-child,#pdia-lista td:nth-child(2),#pend-lista td:nth-child(2),#dup-lista td:nth-child(2){font-family:var(--mono)}
+#pdia-lista td:first-child{font-family:var(--body)}
+#desc-lista td:nth-child(5){white-space:normal;min-width:300px;font-size:12.5px;color:var(--muted)}
+#desc-lista td:nth-child(4){white-space:normal;min-width:160px}
+#desc-lista td:nth-child(3),#desc-lista td:first-child{font-family:var(--mono)}
+#desc-lista td:nth-child(4) small{display:block;color:var(--muted);font-size:11.5px}
+#desc-filtro{flex-wrap:wrap}
+#dup-tipos .linha2{grid-template-columns:minmax(150px,210px) minmax(0,1fr) 56px}
+@media (max-width:620px){#dup-tipos .linha2{grid-template-columns:minmax(0,1fr) 56px}}
+.tp{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:0}
+.tag{font-family:var(--body);font-size:11.5px;border-radius:4px;padding:1px 6px;background:var(--neutral-soft);color:var(--muted)}
+.tag.ok{background:var(--accent-soft);color:var(--ink)}
+.tag.late{background:var(--warn-soft);color:var(--warn)}
+.vazio{color:var(--muted);font-size:13px;margin:4px 0}
+/* abas */
+.abas{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.abas button{font:inherit;font-size:15px;font-weight:500;border:0;background:transparent;color:var(--muted);padding:8px 14px 10px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.abas button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.abas small{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-left:6px}
+.aba{display:flex;flex-direction:column;gap:28px}
+.aba[hidden]{display:none}
+.rolar{max-height:440px;overflow:auto}
+.rolar thead th{position:sticky;top:0;background:var(--surface)}
+.faixas{display:flex;flex-wrap:wrap;gap:8px}
+.faixa{border:1px solid var(--line);border-radius:8px;padding:6px 12px;background:var(--surface);font-size:13px}
+.faixa b{font-family:var(--mono);font-weight:500;margin-right:6px}
+.faixa.alerta{border-color:var(--warn);color:var(--warn)}
+svg .col.clicavel{cursor:pointer}
+svg .col:focus-visible{outline:2px solid var(--accent)}
+@media (prefers-reduced-motion:no-preference){.barra span{transition:flex-grow .3s ease}}
+</style>
+
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <div class="eyebrow">Caroline Macedo Advocacia · Astrea</div>
+      <h1>Ranking do Escritório <span id="ano"></span></h1>
+      <p class="sub">Atividades e leitura de publicações do ano no Astrea, por pessoa.</p>
+    </div>
+    <div class="fresco" id="atualizado"></div>
+  </header>
+  <div class="aviso" id="aviso" hidden></div>
+
+  <nav class="abas" role="tablist" aria-label="Assunto">
+    <button type="button" role="tab" id="tab-atividades" aria-selected="true" aria-controls="aba-atividades">Atividades</button>
+    <button type="button" role="tab" id="tab-publicacoes" aria-selected="false" aria-controls="aba-publicacoes">Publicações<small id="tab-pend"></small></button>
+  </nav>
+
+  <div class="aba" id="aba-atividades" role="tabpanel" aria-labelledby="tab-atividades">
+  <p class="nota">Prazos, tarefas, audiências e eventos. Conta para quem está como responsável na atividade: o Astrea não registra quem clicou em concluir.</p>
+
+  <section class="kpis" id="kpis" aria-label="Números do ano"></section>
+
+  <section class="sec" aria-labelledby="h-dia">
+    <div class="sec-head">
+      <h2 id="h-dia">Dia a dia</h2>
+      <div class="diactl">
+        <button type="button" id="dia-ant" aria-label="Dia anterior com conclusões">‹</button>
+        <input type="date" id="dia-data" aria-label="Escolher o dia">
+        <button type="button" id="dia-prox" aria-label="Próximo dia com conclusões">›</button>
+        <button type="button" id="dia-ultimo">Último dia</button>
+      </div>
+    </div>
+    <p class="dia-titulo" id="dia-titulo"></p>
+    <div class="grid2">
+      <div class="panel"><div class="rank" id="dia-rank"></div></div>
+      <div class="panel"><div class="legenda" id="dia-leg" style="margin-bottom:6px"></div><div id="dia-horas"></div></div>
+    </div>
+    <div class="panel tabwrap"><table class="lista" id="dia-lista"></table></div>
+    <p class="nota">Horário em que a atividade foi marcada como concluída no Astrea. As setas pulam para o dia anterior ou seguinte que teve conclusões.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <h2>Quem mais concluiu</h2>
+      <div class="seg" role="group" aria-label="Ordenar ranking">
+        <button type="button" id="ord-concluidas" aria-pressed="true">Tudo concluído</button>
+        <button type="button" id="ord-prazos" aria-pressed="false">Só prazos</button>
+        <button type="button" id="ord-30" aria-pressed="false">Últimos 30 dias</button>
+      </div>
+    </div>
+    <div class="legenda" id="leg-tipos"></div>
+    <div class="panel"><div class="rank" id="rank"></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="sec">
+      <h2>Prazos concluídos até a data</h2>
+      <div class="legenda"><span><i style="background:var(--ok)"></i>Até a data do prazo</span><span><i style="background:var(--late)"></i>Depois da data</span></div>
+      <div class="panel" id="emdia"></div>
+      <p class="nota">Compara o dia em que o prazo foi marcado como concluído no Astrea com a data do prazo. Quem protocola no dia e só dá baixa depois aparece como "depois da data".</p>
+    </div>
+    <div class="sec">
+      <h2>Atrasadas em aberto</h2>
+      <div class="legenda"><span><i style="background:var(--t-prazo)"></i>Prazos</span><span><i style="background:var(--t-tarefa)"></i>Tarefas</span><span><i style="background:var(--t-evento)"></i>Audiências e eventos</span></div>
+      <div class="panel" id="atrasadas"></div>
+      <p class="nota">Atividades com data já vencida que continuam "a concluir" no Astrea. Podem ser pendências reais ou só falta de baixa.</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>Concluídas mês a mês</h2></div>
+    <div class="legenda" id="leg-mes"></div>
+    <div class="panel"><div id="mensal"></div></div>
+  </section>
+
+  <section class="sec">
+    <h2>Prazos mais feitos</h2>
+    <div class="grid2">
+      <div class="panel"><ol class="top" id="top-prazos"></ol></div>
+      <div class="panel"><div class="pessoas-top" id="top-pessoas"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>Tabela completa</h2>
+    <div class="panel tabwrap"><table id="tabela"></table></div>
+    <p class="nota">A planilha com cada atividade (data, tipo, status, título, responsável, processo e data de conclusão) fica no Drive, em EMPRESA / CLAUDE / PRODUTIVIDADE - PRAZOS ASTREA / RELATÓRIOS, e é atualizada todo dia às 12h10 e às 20h10.</p>
+  </section>
+  </div>
+
+  <div class="aba" id="aba-publicacoes" role="tabpanel" aria-labelledby="tab-publicacoes" hidden>
+  <p class="nota">Publicações recebidas no Astrea. "Tratada" é quando alguém lê e dá o tratamento (vincula ao processo, cria prazo ou marca como tratada). O Astrea registra quem tratou e o dia, sem horário. Descartadas não têm data de descarte e contam pela data de divulgação.</p>
+  <div class="aviso" id="pub-vazio" hidden>Os números de publicações aparecem a partir da próxima atualização (12h10 ou 20h10).</div>
+  <section class="kpis" id="pub-kpis" aria-label="Publicações no ano"></section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <h2>Quem leu</h2>
+      <div class="seg" role="group" aria-label="Período do ranking de publicações">
+        <button type="button" id="pord-ano" aria-pressed="true">No ano</button>
+        <button type="button" id="pord-30" aria-pressed="false">Últimos 30 dias</button>
+      </div>
+    </div>
+    <div class="legenda"><span><i style="background:var(--accent)"></i>Tratadas</span><span><i style="background:var(--muted)"></i>Descartadas</span></div>
+    <div class="panel"><div class="rank" id="pub-rank"></div></div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-pdia">
+    <div class="sec-head">
+      <h2 id="h-pdia">Por dia</h2>
+      <div class="diactl">
+        <button type="button" id="pdia-ant" aria-label="Dia anterior com publicações tratadas">‹</button>
+        <input type="date" id="pdia-data" aria-label="Escolher o dia">
+        <button type="button" id="pdia-prox" aria-label="Próximo dia com publicações tratadas">›</button>
+        <button type="button" id="pdia-ultimo">Último dia</button>
+      </div>
+    </div>
+    <div class="legenda" id="pdia-leg"></div>
+    <div class="panel"><div id="pdia-grafico"></div></div>
+    <p class="dia-titulo" id="pdia-titulo"></p>
+    <div class="grid2">
+      <div class="panel"><div class="rank" id="pdia-rank"></div></div>
+      <div class="panel tabwrap rolar"><table class="lista" id="pdia-lista"></table></div>
+    </div>
+    <p class="nota">O gráfico mostra as últimas seis semanas até o dia escolhido. Clique numa coluna para ver o dia.</p>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>Tratadas mês a mês</h2></div>
+    <div class="legenda" id="pmes-leg"></div>
+    <div class="panel"><div id="pmes"></div></div>
+  </section>
+
+  <section class="sec">
+    <h2>Duplicidades</h2>
+    <p class="nota" id="dup-resumo"></p>
+    <div class="grid2">
+      <div class="panel"><div class="rank" id="dup-tipos"></div></div>
+      <div class="panel"><ol class="top" id="dup-diarios"></ol></div>
+    </div>
+    <div class="legenda" id="dup-leg"></div>
+    <div class="panel"><div id="dup-mes"></div></div>
+    <div class="panel tabwrap rolar"><table class="lista" id="dup-lista"></table></div>
+    <p class="nota">Duplicidade é o mesmo processo com a mesma data de divulgação recebido mais de uma vez. O caso mais comum é a intimação sair no diário do tribunal e no Diário de Justiça Eletrônico Nacional (DJEN). "Mesmo diário, texto diferente" pode ser outro ato do mesmo processo no mesmo dia, então vale conferir antes de descartar.</p>
+  </section>
+
+  <section class="sec" aria-labelledby="h-desc">
+    <div class="sec-head">
+      <h2 id="h-desc">Descartadas</h2>
+      <div class="seg" role="group" aria-label="Filtrar descartadas por pessoa" id="desc-filtro"></div>
+    </div>
+    <p class="nota" id="desc-resumo"></p>
+    <div class="panel tabwrap rolar"><table class="lista" id="desc-lista"></table></div>
+    <p class="nota">O Astrea não guarda a data do descarte, então a lista segue a data de divulgação. O trecho é o começo do conteúdo da publicação; o texto completo fica no Astrea, em Publicações, filtro "Descartadas".</p>
+  </section>
+
+  <section class="sec">
+    <h2>Não tratadas agora</h2>
+    <div class="faixas" id="pend-faixas"></div>
+    <div class="panel tabwrap rolar"><table class="lista" id="pend-lista"></table></div>
+  </section>
+  <p class="nota">A planilha com cada publicação (divulgação, status, quem tratou, dia, processo, diário e duplicidade) fica em RELATÓRIOS / publicacoes_escritorio_2026.csv.</p>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const COPIA = /*__COPIA__*/null;
+const ARQUIVO_DRIVE = "1-vjiIVbVNQoHjnNUNRTp2Q4IypOwi7oS";
+const TIPOS = [
+  {k:"prazos", nome:"Prazos", cor:"var(--t-prazo)"},
+  {k:"tarefas", nome:"Tarefas", cor:"var(--t-tarefa)"},
+  {k:"audiencias", nome:"Audiências", cor:"var(--t-aud)"},
+  {k:"eventos", nome:"Eventos", cor:"var(--t-evento)"},
+];
+const MES_TIPO = {"Prazo":"var(--t-prazo)","Tarefa":"var(--t-tarefa)","Audiência":"var(--t-aud)","Evento":"var(--t-evento)"};
+const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+let D = null, FONTE = null, ORDEM = "concluidas", DIA = null;
+const COD = {D:TIPOS[0], T:TIPOS[1], H:TIPOS[2], E:TIPOS[3]};
+const NOME_TIPO = {D:"Prazo", T:"Tarefa", H:"Audiência", E:"Evento"};
+const $ = id => document.getElementById(id);
+const fmt = n => (n||0).toLocaleString("pt-BR");
+const pct = (a,b) => b ? Math.round(100*a/b) + "%" : "–";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// tooltip
+const tip = $("tip");
+function mostrarTip(e, html){ tip.innerHTML = html; tip.hidden = false; moverTip(e); }
+function moverTip(e){ const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8); const y = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8); tip.style.left = x + "px"; tip.style.top = y + "px"; }
+document.addEventListener("pointermove", e => { if (!tip.hidden) moverTip(e); });
+function ligarTip(el, html){ el.addEventListener("pointerenter", e => mostrarTip(e, html)); el.addEventListener("pointerleave", () => tip.hidden = true); el.addEventListener("focus", e => { const r = el.getBoundingClientRect(); mostrarTip({clientX:r.left, clientY:r.bottom}, html); }); el.addEventListener("blur", () => tip.hidden = true); }
+
+function render(){
+  const P = D.pessoas;
+  $("ano").textContent = D.ano;
+  const T = k => P.reduce((s,p) => s + (p[k]||0), 0);
+  const pzFeitos = T("prazos"), emDia = T("prazos_em_dia"), depois = T("prazos_depois");
+  const atras = T("atrasadas_prazo") + T("atrasadas_tarefa") + T("atrasadas_outras");
+  $("kpis").innerHTML = [
+    ["Atividades no ano", fmt(T("movimentadas")), fmt(T("abertas")) + " a concluir · " + fmt(T("canceladas")) + " canceladas"],
+    ["Concluídas", fmt(T("concluidas")), pct(T("concluidas"), T("movimentadas")) + " do total"],
+    ["Prazos concluídos", fmt(pzFeitos), fmt(T("tarefas")) + " tarefas · " + fmt(T("audiencias")) + " audiências"],
+    ["Prazos até a data", pct(emDia, emDia + depois), fmt(depois) + " concluídos depois da data"],
+    ["Atrasadas em aberto", fmt(atras), fmt(T("atrasadas_prazo")) + " prazos · " + fmt(T("atrasadas_tarefa")) + " tarefas"],
+  ].map(([a,b,c]) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join("");
+
+  // ranking
+  $("leg-tipos").innerHTML = TIPOS.map(t => `<span><i style="background:${t.cor}"></i>${t.nome}</span>`).join("");
+  const chave = ORDEM === "prazos" ? "prazos" : ORDEM === "30" ? "ultimos_30_dias" : "concluidas";
+  const lista = P.filter(p => p.movimentadas > 0).slice().sort((a,b) => (b[chave]||0) - (a[chave]||0) || b.concluidas - a.concluidas);
+  const max = Math.max(1, ...lista.map(p => ORDEM === "prazos" ? p.prazos : ORDEM === "30" ? p.ultimos_30_dias : p.concluidas));
+  $("rank").innerHTML = "";
+  lista.forEach((p, i) => {
+    const el = document.createElement("div");
+    el.className = "linha"; el.tabIndex = 0;
+    const tipos = ORDEM === "prazos" ? [TIPOS[0]] : TIPOS;
+    let barra;
+    if (ORDEM === "30") barra = `<span style="flex-grow:${p.ultimos_30_dias};background:var(--accent)"></span>`;
+    else barra = tipos.filter(t => p[t.k]).map(t => `<span style="flex-grow:${p[t.k]};background:${t.cor}"></span>`).join("");
+    const valor = p[chave] || 0;
+    el.innerHTML = `<div class="pos">${i+1}</div>
+      <div class="quem"><b>${esc(p.nome)}${p.ativo ? "" : '<span class="chip">saiu</span>'}</b><small>${fmt(p.movimentadas)} no ano · ${fmt(p.ultimos_7_dias)} nos últimos 7 dias</small></div>
+      <div class="barra" style="width:${(100*valor/max).toFixed(1)}%">${barra}</div>
+      <div class="tot">${fmt(valor)}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>${fmt(p.concluidas)} concluídas<br>${TIPOS.map(t => `${t.nome}: ${fmt(p[t.k])}`).join("<br>")}<br>Últimos 30 dias: ${fmt(p.ultimos_30_dias)}`);
+    $("rank").appendChild(el);
+  });
+
+  // prazos em dia
+  const pz = P.filter(p => p.prazos > 0).slice().sort((a,b) => b.prazos - a.prazos);
+  const maxPz = Math.max(1, ...pz.map(p => p.prazos_em_dia + p.prazos_depois));
+  $("emdia").innerHTML = "";
+  pz.forEach(p => {
+    const t = p.prazos_em_dia + p.prazos_depois;
+    const el = document.createElement("div"); el.className = "linha linha2"; el.tabIndex = 0;
+    el.innerHTML = `<div class="quem"><b>${esc(p.nome)}</b><small>${fmt(t)} prazos</small></div>
+      <div class="barra" style="width:${(100*t/maxPz).toFixed(1)}%">${p.prazos_em_dia ? `<span style="flex-grow:${p.prazos_em_dia};background:var(--ok)"></span>` : ""}${p.prazos_depois ? `<span style="flex-grow:${p.prazos_depois};background:var(--late)"></span>` : ""}</div>
+      <div class="tot">${pct(p.prazos_em_dia, t)}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>Até a data: ${fmt(p.prazos_em_dia)}<br>Depois da data: ${fmt(p.prazos_depois)}`);
+    $("emdia").appendChild(el);
+  });
+
+  // atrasadas em aberto
+  const at = P.map(p => ({...p, at: p.atrasadas_prazo + p.atrasadas_tarefa + p.atrasadas_outras})).filter(p => p.at > 0).sort((a,b) => b.at - a.at);
+  const maxAt = Math.max(1, ...at.map(p => p.at));
+  $("atrasadas").innerHTML = at.length ? "" : '<p class="nota">Nenhuma atividade vencida em aberto.</p>';
+  at.forEach(p => {
+    const el = document.createElement("div"); el.className = "linha linha2"; el.tabIndex = 0;
+    const seg = [["atrasadas_prazo","var(--t-prazo)"],["atrasadas_tarefa","var(--t-tarefa)"],["atrasadas_outras","var(--t-evento)"]]
+      .filter(([k]) => p[k]).map(([k,c]) => `<span style="flex-grow:${p[k]};background:${c}"></span>`).join("");
+    el.innerHTML = `<div class="quem"><b>${esc(p.nome)}${p.ativo ? "" : '<span class="chip">saiu</span>'}</b><small>${fmt(p.abertas)} a concluir no ano</small></div>
+      <div class="barra" style="width:${(100*p.at/maxAt).toFixed(1)}%">${seg}</div><div class="tot">${fmt(p.at)}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>Prazos vencidos: ${fmt(p.atrasadas_prazo)}<br>Tarefas vencidas: ${fmt(p.atrasadas_tarefa)}<br>Audiências e eventos: ${fmt(p.atrasadas_outras)}`);
+    $("atrasadas").appendChild(el);
+  });
+
+  renderDia();
+  renderMensal();
+  renderPub();
+
+  // prazos mais feitos
+  const tp = D.prazos_mais_feitos || [];
+  const maxTp = Math.max(1, ...tp.map(x => x[1]));
+  $("top-prazos").innerHTML = tp.map(([t,n]) => `<li><span title="${esc(t)}">${esc(t.charAt(0) + t.slice(1).toLowerCase())}</span><span class="tr"><span class="fi" style="width:${(100*n/maxTp).toFixed(1)}%"></span></span><span class="n">${fmt(n)}</span></li>`).join("");
+  $("top-pessoas").innerHTML = P.filter(p => p.prazos >= 10).slice().sort((a,b) => b.prazos - a.prazos).map(p =>
+    `<div><h3>${esc(p.nome)}</h3><ul>${p.prazos_mais_feitos.map(([t,n]) => `<li><span>${esc(t.charAt(0) + t.slice(1).toLowerCase())}</span><b>${fmt(n)}</b></li>`).join("")}</ul></div>`).join("");
+
+  // tabela
+  const cols = [["Pessoa","nome"],["No ano","movimentadas"],["Concluídas","concluidas"],["Prazos","prazos"],["Tarefas","tarefas"],["Audiências","audiencias"],["Eventos","eventos"],["Prazos até a data",null],["Atrasados (prazo / tarefa)",null],["Últimos 7 dias","ultimos_7_dias"],["Últimos 30 dias","ultimos_30_dias"]];
+  $("tabela").innerHTML = `<thead><tr>${cols.map(c => `<th scope="col">${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+    P.slice().sort((a,b) => b.concluidas - a.concluidas).map(p => `<tr><td>${esc(p.nome)}${p.ativo ? "" : ' <span class="chip">saiu</span>'}</td>` +
+      cols.slice(1).map(([n,k]) => {
+        if (n === "Prazos até a data") return `<td>${pct(p.prazos_em_dia, p.prazos_em_dia + p.prazos_depois)}</td>`;
+        if (n.startsWith("Atrasados")) return `<td class="${p.atrasadas_prazo + p.atrasadas_tarefa >= 10 ? "alerta" : ""}">${fmt(p.atrasadas_prazo)} / ${fmt(p.atrasadas_tarefa)}</td>`;
+        return `<td>${fmt(p[k])}</td>`;
+      }).join("") + "</tr>").join("") + "</tbody>";
+
+  const el = $("atualizado");
+  if (D.gerado_em){ const [d,h] = D.gerado_em.split("T"); el.textContent = (FONTE === "drive" ? "Dados de " : "Cópia de ") + d.split("-").reverse().join("/") + " às " + h; }
+}
+
+function diasComDados(){ return [...new Set((D.concluidas_lista || []).map(x => x[0].slice(0,10)))].sort(); }
+function renderDia(){
+  const dias = diasComDados();
+  const inp = $("dia-data");
+  if (!dias.length){ $("dia-titulo").textContent = "Este arquivo de dados ainda não traz o horário das conclusões."; ["dia-rank","dia-horas","dia-lista","dia-leg"].forEach(i => $(i).innerHTML = ""); return; }
+  const ultimo = dias[dias.length - 1];
+  if (!DIA || DIA > ultimo) DIA = ultimo;
+  inp.min = D.ano + "-01-01"; inp.max = ultimo; inp.value = DIA;
+  $("dia-ant").disabled = !dias.some(d => d < DIA);
+  $("dia-prox").disabled = !dias.some(d => d > DIA);
+  $("dia-ultimo").disabled = DIA === ultimo;
+  const itens = D.concluidas_lista.filter(x => x[0].startsWith(DIA));
+  const quando = new Date(DIA + "T12:00").toLocaleDateString("pt-BR", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  const nPz = itens.filter(x => x[2] === "D").length;
+  $("dia-titulo").textContent = itens.length
+    ? `${quando}: ${fmt(itens.length)} ${itens.length === 1 ? "concluída" : "concluídas"}, ${fmt(nPz)} ${nPz === 1 ? "prazo" : "prazos"}`
+    : `${quando}: nenhuma atividade concluída`;
+  $("dia-leg").innerHTML = TIPOS.map(t => `<span><i style="background:${t.cor}"></i>${t.nome}</span>`).join("");
+
+  // ranking do dia
+  const por = {};
+  itens.forEach(([q, nome, t]) => { const p = por[nome] = por[nome] || {nome, n:0, D:0, T:0, H:0, E:0, prim:q, ult:q}; p.n++; p[t]++; if (q < p.prim) p.prim = q; if (q > p.ult) p.ult = q; });
+  const lista = Object.values(por).sort((a,b) => b.n - a.n || a.nome.localeCompare(b.nome));
+  const max = Math.max(1, ...lista.map(p => p.n));
+  const hm = q => q.slice(11,16);
+  $("dia-rank").innerHTML = lista.length ? "" : '<p class="vazio">Ninguém concluiu atividades neste dia.</p>';
+  lista.forEach((p, i) => {
+    const el = document.createElement("div"); el.className = "linha"; el.tabIndex = 0;
+    const barra = "DTHE".split("").filter(k => p[k]).map(k => `<span style="flex-grow:${p[k]};background:${COD[k].cor}"></span>`).join("");
+    el.innerHTML = `<div class="pos">${i+1}</div><div class="quem"><b>${esc(p.nome)}</b><small>${p.n === 1 ? "às " + hm(p.prim) : "das " + hm(p.prim) + " às " + hm(p.ult)}</small></div>
+      <div class="barra" style="width:${(100*p.n/max).toFixed(1)}%">${barra}</div><div class="tot">${fmt(p.n)}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>${"DTHE".split("").map(k => `${COD[k].nome}: ${fmt(p[k])}`).join("<br>")}`);
+    $("dia-rank").appendChild(el);
+  });
+
+  // horário de cada conclusão
+  if (!lista.length){ $("dia-horas").innerHTML = ""; }
+  else {
+    const horas = itens.map(x => +x[0].slice(11,13) + +x[0].slice(14,16)/60);
+    // madrugada (antes das 6h) fica encostada na borda esquerda; o horário real aparece no detalhe
+    const diurnas = horas.filter(h => h >= 6);
+    const h0 = Math.min(7, Math.floor(Math.min(...(diurnas.length ? diurnas : [7])))), h1 = Math.max(19, Math.ceil(Math.max(...horas) + 0.01));
+    const cedo = horas.some(h => h < h0);
+    const W = 560, L = 104, R = 12, Tp = 8, linhaH = 30, B = 26, H = Tp + lista.length * linhaH + B;
+    const x = h => L + (W - L - R) * (h - h0) / (h1 - h0);
+    const passo = h1 - h0 > 12 ? 2 : 1;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Horário de cada conclusão no dia, por pessoa">`;
+    for (let h = h0; h <= h1; h += passo) s += `<line class="grade" x1="${x(h)}" x2="${x(h)}" y1="${Tp}" y2="${H-B}"/><text x="${x(h)}" y="${H-8}" text-anchor="middle">${h === h0 && cedo ? "≤" + h + "h" : h + "h"}</text>`;
+    lista.forEach((p, i) => {
+      const cy = Tp + i * linhaH + linhaH / 2;
+      const nm = p.nome.length > 15 ? p.nome.slice(0, 14) + "…" : p.nome;
+      s += `<text x="${L-10}" y="${cy+4}" text-anchor="end" class="lbl" style="font-family:var(--body);font-size:12px">${esc(nm)}</text>`;
+      itens.forEach((it, j) => { if (it[1] !== p.nome) return;
+        s += `<circle class="ponto" tabindex="0" data-j="${j}" cx="${x(Math.max(h0, horas[j])).toFixed(1)}" cy="${cy}" r="6" fill="${COD[it[2]].cor}" stroke="var(--surface)" stroke-width="2"/>`; });
+    });
+    s += `</svg>`;
+    $("dia-horas").innerHTML = s;
+    $("dia-horas").querySelectorAll(".ponto").forEach(c => { const it = itens[+c.dataset.j];
+      ligarTip(c, `<b>${hm(it[0])}</b> · ${esc(it[1])}<br>${NOME_TIPO[it[2]]}: ${esc(it[3] || "(sem título)")}`); });
+  }
+
+  // lista
+  const situ = v => v === "s" ? '<span class="tag ok">até a data</span>' : v === "n" ? '<span class="tag late">depois da data</span>' : "";
+  $("dia-lista").innerHTML = itens.length ? `<thead><tr><th scope="col">Hora</th><th scope="col">Pessoa</th><th scope="col">Tipo</th><th scope="col">Atividade</th><th scope="col">Prazo</th></tr></thead><tbody>` +
+    itens.map(([q, nome, t, tit, em]) => `<tr><td>${hm(q)}</td><td>${esc(nome)}</td><td><i class="tp" style="background:${COD[t].cor}"></i>${NOME_TIPO[t]}</td><td>${esc(tit || "(sem título)")}</td><td>${situ(em)}</td></tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td class="vazio">Nada concluído neste dia.</td></tr></tbody>`;
+}
+
+function irDia(d){ DIA = d; tip.hidden = true; if (D) renderDia(); }
+$("dia-data").addEventListener("change", e => { if (e.target.value) irDia(e.target.value); });
+$("dia-ant").addEventListener("click", () => { const a = diasComDados().filter(d => d < DIA); if (a.length) irDia(a[a.length - 1]); });
+$("dia-prox").addEventListener("click", () => { const a = diasComDados().filter(d => d > DIA); if (a.length) irDia(a[0]); });
+$("dia-ultimo").addEventListener("click", () => { const a = diasComDados(); irDia(a[a.length - 1]); });
+
+// ---------- Publicações ----------
+const CORES_P = ["var(--t-prazo)","var(--t-tarefa)","var(--t-aud)","var(--t-evento)"];
+const DUP = {D:{nome:"Diário do tribunal + DJEN", longo:"Mesma publicação em outro diário", cor:"var(--t-tarefa)"},
+             M:{nome:"Mesmo diário, texto diferente", longo:"Mesmo processo e dia no mesmo diário, com texto diferente", cor:"var(--t-aud)"},
+             I:{nome:"Cópia idêntica", longo:"Cópia idêntica no mesmo diário", cor:"var(--t-evento)"}};
+const tagDup = v => v ? `<span class="tag late" title="${DUP[v].longo}">${v === "D" ? "duplicada" : v === "I" ? "cópia idêntica" : "mesmo proc./dia"}</span>` : "";
+let PORD = "ano", PDIA = null, ABA = "atividades", DESC = "";
+const dataBR = s => s ? s.slice(8,10) + "/" + s.slice(5,7) + "/" + s.slice(0,4) : "–";
+function grupoPessoas(PB){
+  const nomes = PB.pessoas.slice().sort((a,b) => b.tratadas - a.tratadas).map(p => p.nome);
+  const g = nomes.length > 4 ? [...nomes.slice(0,3), "Outros"] : nomes;
+  const de = n => g.includes(n) ? n : "Outros";
+  return {g, de, cor: n => CORES_P[g.indexOf(de(n))] || CORES_P[3]};
+}
+function teto(m){ if (m <= 5) return 5; const p = 10 ** Math.floor(Math.log10(m)); for (const f of [1,2,2.5,5,10]) if (f*p >= m) return f*p; }
+function colunas(alvo, rotulos, series, vals, o){
+  o = o || {};
+  const tot = vals.map(v => v.reduce((a,b) => a+b, 0));
+  const W = 900, H = o.altura || 260, L = 44, R = 10, Tp = 18, B = 28;
+  const topo = teto(Math.max(1, ...tot)), passo = topo / 5;
+  const y = v => Tp + (H - Tp - B) * (1 - v / topo);
+  const bw = (W - L - R) / Math.max(rotulos.length, 1);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria || "")}">`;
+  for (let v = 0; v <= topo + 0.001; v += passo) s += `<line class="grade" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(Math.round(v))}</text>`;
+  rotulos.forEach((r, i) => {
+    const x = L + i * bw + bw * 0.16, w = Math.max(2, bw * 0.68);
+    let base = 0, partes = "";
+    vals[i].forEach((v, j) => { if (!v) return; const y1 = y(base + v), y0 = y(base); partes += `<rect x="${x}" y="${y1}" width="${w}" height="${Math.max(0, y0 - y1 - (base > 0 ? 2 : 0))}" fill="${series[j].cor}"/>`; base += v; });
+    const ativo = o.ativo === i ? `<rect x="${L + i*bw}" y="${Tp}" width="${bw}" height="${H-Tp-B}" fill="var(--accent-soft)"/>` : "";
+    s += `<g class="col${o.clique ? " clicavel" : ""}" tabindex="0" data-i="${i}">${ativo}${partes}<rect x="${L + i*bw}" y="${Tp}" width="${bw}" height="${H-Tp-B}" fill="transparent"/>` +
+      (o.totais !== false && tot[i] ? `<text x="${x + w/2}" y="${y(tot[i]) - 6}" text-anchor="middle" class="lbl">${fmt(tot[i])}</text>` : "") +
+      (o.rotuloX ? o.rotuloX(r, i, x + w/2, H - 8) : `<text x="${x + w/2}" y="${H - 8}" text-anchor="middle">${esc(r)}</text>`) + `</g>`;
+  });
+  s += `<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/></svg>`;
+  alvo.innerHTML = `<div class="tabwrap"><div style="min-width:520px">${s}</div></div>`;
+  alvo.querySelectorAll(".col").forEach(g => {
+    const i = +g.dataset.i;
+    ligarTip(g, (o.dica ? o.dica(i) : `<b>${esc(rotulos[i])}</b>`) + `<br>Total: ${fmt(tot[i])}<br>` + series.map((sr,j) => vals[i][j] ? `${esc(sr.nome)}: ${fmt(vals[i][j])}` : "").filter(Boolean).join("<br>"));
+    if (o.clique){ g.addEventListener("click", () => o.clique(i)); g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); o.clique(i); } }); }
+  });
+}
+function legenda(el, itens){ el.innerHTML = itens.map(([n,c]) => `<span><i style="background:${c}"></i>${esc(n)}</span>`).join(""); }
+
+function renderPub(){
+  const PB = D.publicacoes;
+  $("pub-vazio").hidden = !!PB;
+  $("tab-pend").textContent = PB && PB.pendentes ? fmt(PB.pendentes) : "";
+  ["pub-kpis","pub-rank","pdia-leg","pdia-grafico","pdia-titulo","pdia-rank","pdia-lista","pmes-leg","pmes","dup-resumo","dup-tipos","dup-diarios","dup-leg","dup-mes","dup-lista","pend-faixas","pend-lista"].forEach(i => { if (!PB) $(i).innerHTML = ""; });
+  if (!PB) return;
+  const P = PB.pessoas, T = k => P.reduce((s,p) => s + (p[k]||0), 0);
+  const dp = PB.duplicidade || {};
+  const rapidas = T("tratadas_no_dia_seguinte_ou_antes");
+  $("pub-kpis").innerHTML = [
+    ["Tratadas no ano", fmt(PB.tratadas), fmt(T("ultimos_30_dias")) + " nos últimos 30 dias"],
+    ["Descartadas", fmt(PB.descartadas), "divulgadas em " + D.ano],
+    ["Não tratadas agora", fmt(PB.pendentes), PB.pendentes_mais_antiga ? "a mais antiga é de " + dataBR(PB.pendentes_mais_antiga) : "nenhuma pendente"],
+    ["Chegaram em duplicidade", fmt(dp.extras), pct(dp.extras, dp.recebidas_no_ano) + " das " + fmt(dp.recebidas_no_ano) + " recebidas"],
+    ["Tratadas até o dia seguinte", pct(rapidas, PB.tratadas), "contando da data de divulgação"],
+  ].map(([a,b,c]) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join("");
+
+  // quem leu
+  const chave = PORD === "30" ? "ultimos_30_dias" : null;
+  const lista = P.slice().sort((a,b) => chave ? (b[chave] - a[chave]) : (b.tratadas + b.descartadas - a.tratadas - a.descartadas));
+  const val = p => chave ? p[chave] : p.tratadas + p.descartadas;
+  const max = Math.max(1, ...lista.map(val));
+  $("pub-rank").innerHTML = "";
+  lista.forEach((p, i) => {
+    const el = document.createElement("div"); el.className = "linha"; el.tabIndex = 0;
+    const barra = chave ? (p[chave] ? `<span style="flex-grow:${p[chave]};background:var(--accent)"></span>` : "")
+      : (p.tratadas ? `<span style="flex-grow:${p.tratadas};background:var(--accent)"></span>` : "") + (p.descartadas ? `<span style="flex-grow:${p.descartadas};background:var(--muted)"></span>` : "");
+    const med = p.dias_ate_tratar_mediana;
+    el.innerHTML = `<div class="pos">${i+1}</div><div class="quem"><b>${esc(p.nome)}</b><small>${pct(p.tratadas_no_dia_seguinte_ou_antes, p.tratadas)} tratadas até o dia seguinte · ${fmt(p.ultimos_7_dias)} nos últimos 7 dias</small></div>
+      <div class="barra" style="width:${(100*val(p)/max).toFixed(1)}%">${barra}</div><div class="tot">${fmt(val(p))}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>Tratadas: ${fmt(p.tratadas)}<br>Descartadas: ${fmt(p.descartadas)}<br>Das tratadas, duplicadas: ${fmt(p.duplicadas_tratadas)}<br>Tempo típico até tratar: ${med == null ? "–" : med === 0 ? "no mesmo dia" : med === 1 ? "1 dia" : med + " dias"}<br>Últimos 30 dias: ${fmt(p.ultimos_30_dias)}`);
+    $("pub-rank").appendChild(el);
+  });
+
+  renderPubDia();
+
+  // mês a mês
+  const G = grupoPessoas(PB);
+  legenda($("pmes-leg"), G.g.map(n => [n, G.cor(n)]));
+  const meses = Object.keys(PB.mensal || {}).filter(m => m.startsWith(String(D.ano))).sort();
+  colunas($("pmes"), meses.map(m => MESES[+m.slice(5) - 1]), G.g.map(n => ({nome:n, cor:G.cor(n)})),
+    meses.map(m => G.g.map(n => Object.entries(PB.mensal[m]).filter(([k]) => G.de(k) === n).reduce((s,[,v]) => s+v, 0))),
+    {aria:"Publicações tratadas por mês e pessoa", dica: i => `<b>${MESES[+meses[i].slice(5)-1]}/${D.ano}</b>`});
+
+  // duplicidades
+  const pt = dp.por_tipo || {};
+  $("dup-resumo").textContent = `${fmt(dp.extras)} publicações chegaram repetidas em ${fmt(dp.grupos)} processos/dias diferentes, de ${fmt(dp.recebidas_no_ano)} recebidas no ano.`;
+  const maxT = Math.max(1, ...Object.values(pt));
+  $("dup-tipos").innerHTML = "";
+  ["D","M","I"].forEach(k => {
+    const el = document.createElement("div"); el.className = "linha linha2"; el.tabIndex = 0;
+    el.innerHTML = `<div class="quem"><b>${DUP[k].nome}</b><small>${DUP[k].longo.toLowerCase()}</small></div><div class="barra" style="width:${(100*(pt[k]||0)/maxT).toFixed(1)}%">${pt[k] ? `<span style="flex-grow:1;background:${DUP[k].cor}"></span>` : ""}</div><div class="tot">${fmt(pt[k]||0)}</div>`;
+    ligarTip(el, `<b>${DUP[k].longo}</b><br>${fmt(pt[k]||0)} cópias a mais`);
+    $("dup-tipos").appendChild(el);
+  });
+  const di = dp.diarios || [], maxD = Math.max(1, ...di.map(x => x[1]));
+  $("dup-diarios").innerHTML = `<li style="font-size:12px;color:var(--muted)"><span>Diários envolvidos</span><span></span><span class="n">casos</span></li>` +
+    di.map(([t,n]) => `<li><span title="${esc(t)}">${esc(t)}</span><span class="tr"><span class="fi" style="width:${(100*n/maxD).toFixed(1)}%;background:var(--t-tarefa)"></span></span><span class="n">${fmt(n)}</span></li>`).join("");
+  legenda($("dup-leg"), ["D","M","I"].map(k => [DUP[k].nome, DUP[k].cor]));
+  const dm = Object.keys(dp.mensal || {}).filter(m => m.startsWith(String(D.ano))).sort();
+  colunas($("dup-mes"), dm.map(m => MESES[+m.slice(5) - 1]), ["D","M","I"].map(k => ({nome:DUP[k].nome, cor:DUP[k].cor})),
+    dm.map(m => ["D","M","I"].map(k => dp.mensal[m][k] || 0)), {altura:220, aria:"Cópias repetidas por mês de divulgação", dica: i => `<b>${MESES[+dm[i].slice(5)-1]}/${D.ano}</b> · cópias a mais`});
+  $("dup-lista").innerHTML = `<thead><tr><th scope="col">Divulgada</th><th scope="col">Processo</th><th scope="col">Vezes</th><th scope="col">Diários</th><th scope="col">Tratada por</th><th scope="col">Situação</th></tr></thead><tbody>` +
+    (dp.recentes || []).map(([d,proc,n,dia,quem,st]) => `<tr><td>${dataBR(d)}</td><td>${esc(proc)}</td><td>${n}</td><td>${esc(dia)}</td><td>${esc(quem || "–")}</td><td>${esc(st)}</td></tr>`).join("") + "</tbody>";
+
+  renderDescartadas();
+
+  // pendentes
+  const fx = PB.pendentes_faixas || {};
+  $("pend-faixas").innerHTML = PB.pendentes ? ["até 1 dia","2 a 3 dias","4 a 7 dias","mais de 7 dias"].filter(k => fx[k]).map(k => `<span class="faixa${k === "mais de 7 dias" ? " alerta" : ""}"><b>${fmt(fx[k])}</b>${k === "até 1 dia" ? "divulgadas há até 1 dia" : "esperando " + k}</span>`).join("") : '<span class="faixa">Nenhuma publicação esperando tratamento.</span>';
+  const pl = PB.pendentes_lista || [];
+  $("pend-lista").innerHTML = pl.length ? `<thead><tr><th scope="col">Divulgada</th><th scope="col">Processo</th><th scope="col">Diário</th><th scope="col">Responsável do caso</th><th scope="col">Duplicidade</th></tr></thead><tbody>` +
+    pl.map(([d,proc,dia,resp,dup]) => `<tr><td>${dataBR(d)}</td><td>${esc(proc || "(sem número)")}</td><td>${esc(dia)}</td><td>${esc(resp || "–")}</td><td>${tagDup(dup)}</td></tr>`).join("") + "</tbody>" : "";
+}
+
+function renderDescartadas(){
+  const PB = D.publicacoes, L = PB.descartadas_lista;
+  if (!L){ $("desc-filtro").innerHTML = ""; $("desc-lista").innerHTML = ""; $("desc-resumo").textContent = "A lista das descartadas aparece a partir da próxima atualização."; return; }
+  const cont = {}; L.forEach(x => cont[x[1]] = (cont[x[1]] || 0) + 1);
+  const nomes = Object.keys(cont).sort((a,b) => cont[b] - cont[a]);
+  if (DESC && !cont[DESC]) DESC = "";
+  $("desc-filtro").innerHTML = [["", "Todas", L.length], ...nomes.map(n => [n, n.split(" ")[0], cont[n]])]
+    .map(([v, r, n]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === DESC}">${esc(r)} · ${fmt(n)}</button>`).join("");
+  $("desc-filtro").querySelectorAll("button").forEach(b => b.addEventListener("click", () => { DESC = b.dataset.v; renderDescartadas(); }));
+  const itens = L.filter(x => !DESC || x[1] === DESC);
+  const porDiario = {}; itens.forEach(x => porDiario[x[3]] = (porDiario[x[3]] || 0) + 1);
+  const top = Object.entries(porDiario).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  const nDup = itens.filter(x => x[7]).length;
+  $("desc-resumo").textContent = `${fmt(itens.length)} ${itens.length === 1 ? "publicação descartada" : "publicações descartadas"}${DESC ? " por " + DESC : ""} em ${D.ano}. Diários com mais descartes: ${top.map(([d,n]) => `${d} (${fmt(n)})`).join(", ")}.${nDup ? ` ${fmt(nDup)} eram cópias repetidas.` : ""}`;
+  $("desc-lista").innerHTML = itens.length ? `<thead><tr><th scope="col">Divulgada</th><th scope="col">Descartada por</th><th scope="col">Processo</th><th scope="col">Diário</th><th scope="col">Trecho</th><th scope="col"></th></tr></thead><tbody>` +
+    itens.map(([d, quem, proc, dia, org, tr, mot, dup]) => `<tr><td>${dataBR(d)}</td><td>${esc(quem)}</td><td>${esc(proc || "(sem número)")}</td><td>${esc(dia)}<small>${esc(org)}</small></td><td>${esc(tr || "–")}${tr && tr.length >= 220 ? "…" : ""}</td><td>${tagDup(dup)}${mot === "BLOCKED" ? ' <span class="tag">bloqueada</span>' : ""}</td></tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td class="vazio">Nenhuma descartada.</td></tr></tbody>`;
+}
+
+function diasPub(){ return [...new Set((D.publicacoes && D.publicacoes.tratadas_lista || []).map(x => x[0]))].sort(); }
+function renderPubDia(){
+  const PB = D.publicacoes, dias = diasPub(), inp = $("pdia-data");
+  if (!dias.length) return;
+  const ultimo = dias[dias.length - 1];
+  if (!PDIA || PDIA > ultimo) PDIA = ultimo;
+  inp.min = D.ano + "-01-01"; inp.max = ultimo; inp.value = PDIA;
+  $("pdia-ant").disabled = !dias.some(d => d < PDIA);
+  $("pdia-prox").disabled = !dias.some(d => d > PDIA);
+  $("pdia-ultimo").disabled = PDIA === ultimo;
+  const G = grupoPessoas(PB);
+  legenda($("pdia-leg"), G.g.map(n => [n, G.cor(n)]));
+  // seis semanas até o dia escolhido
+  const porDia = {};
+  PB.tratadas_lista.forEach(([d, n]) => { (porDia[d] = porDia[d] || {})[G.de(n)] = ((porDia[d] || {})[G.de(n)] || 0) + 1; });
+  const fim = new Date(PDIA + "T12:00"), datas = [];
+  for (let k = 41; k >= 0; k--){ const t = new Date(fim); t.setDate(fim.getDate() - k); datas.push(t.toISOString().slice(0,10)); }
+  colunas($("pdia-grafico"), datas, G.g.map(n => ({nome:n, cor:G.cor(n)})), datas.map(d => G.g.map(n => (porDia[d] || {})[n] || 0)), {
+    altura: 220, totais: false, ativo: datas.length - 1, aria: "Publicações tratadas por dia nas últimas seis semanas",
+    dica: i => `<b>${new Date(datas[i] + "T12:00").toLocaleDateString("pt-BR", {weekday:"short", day:"2-digit", month:"2-digit"})}</b>`,
+    clique: i => irPDia(datas[i]),
+    rotuloX: (d, i, x, yy) => new Date(d + "T12:00").getDay() === 1 || i === datas.length - 1 ? `<text x="${x}" y="${yy}" text-anchor="middle"${i === datas.length - 1 ? ' class="lbl"' : ""}>${d.slice(8,10)}/${d.slice(5,7)}</text>` : ""});
+  const itens = PB.tratadas_lista.filter(x => x[0] === PDIA);
+  const quando = new Date(PDIA + "T12:00").toLocaleDateString("pt-BR", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  const nDup = itens.filter(x => x[5] === "D" || x[5] === "I").length;
+  $("pdia-titulo").textContent = itens.length ? `${quando}: ${fmt(itens.length)} ${itens.length === 1 ? "publicação tratada" : "publicações tratadas"}${nDup ? `, ${fmt(nDup)} delas duplicadas` : ""}` : `${quando}: nenhuma publicação tratada`;
+  const por = {};
+  itens.forEach(([, n, dv, , , dup]) => { const p = por[n] = por[n] || {nome:n, n:0, dup:0, mesmo:0}; p.n++; if (dup === "D" || dup === "I") p.dup++; if (dv === PDIA) p.mesmo++; });
+  const lista = Object.values(por).sort((a,b) => b.n - a.n), max = Math.max(1, ...lista.map(p => p.n));
+  $("pdia-rank").innerHTML = lista.length ? "" : '<p class="vazio">Ninguém tratou publicações neste dia.</p>';
+  lista.forEach((p, i) => {
+    const el = document.createElement("div"); el.className = "linha"; el.tabIndex = 0;
+    el.innerHTML = `<div class="pos">${i+1}</div><div class="quem"><b>${esc(p.nome)}</b><small>${fmt(p.mesmo)} divulgadas no próprio dia${p.dup ? " · " + fmt(p.dup) + " duplicadas" : ""}</small></div>
+      <div class="barra" style="width:${(100*p.n/max).toFixed(1)}%"><span style="flex-grow:1;background:${G.cor(p.nome)}"></span></div><div class="tot">${fmt(p.n)}</div>`;
+    ligarTip(el, `<b>${esc(p.nome)}</b><br>${fmt(p.n)} tratadas em ${dataBR(PDIA)}<br>Divulgadas no próprio dia: ${fmt(p.mesmo)}<br>Duplicadas: ${fmt(p.dup)}`);
+    $("pdia-rank").appendChild(el);
+  });
+  $("pdia-lista").innerHTML = itens.length ? `<thead><tr><th scope="col">Quem</th><th scope="col">Processo</th><th scope="col">Diário</th><th scope="col">Divulgada</th><th scope="col"></th></tr></thead><tbody>` +
+    itens.slice().sort((a,b) => a[1].localeCompare(b[1]) || a[3].localeCompare(b[3])).map(([, n, dv, proc, dia, dup]) => `<tr><td>${esc(n)}</td><td>${esc(proc || "(sem número)")}</td><td>${esc(dia)}</td><td>${dataBR(dv)}</td><td>${tagDup(dup)}</td></tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td class="vazio">Nada tratado neste dia.</td></tr></tbody>`;
+}
+function irPDia(d){ PDIA = d; tip.hidden = true; if (D && D.publicacoes) renderPubDia(); }
+$("pdia-data").addEventListener("change", e => { if (e.target.value) irPDia(e.target.value); });
+$("pdia-ant").addEventListener("click", () => { const a = diasPub().filter(d => d < PDIA); if (a.length) irPDia(a[a.length - 1]); });
+$("pdia-prox").addEventListener("click", () => { const a = diasPub().filter(d => d > PDIA); if (a.length) irPDia(a[0]); });
+$("pdia-ultimo").addEventListener("click", () => { const a = diasPub(); irPDia(a[a.length - 1]); });
+["ano","30"].forEach(o => $("pord-" + o).addEventListener("click", () => { PORD = o; ["ano","30"].forEach(x => $("pord-" + x).setAttribute("aria-pressed", String(x === o))); if (D) renderPub(); }));
+function abrirAba(a){
+  ABA = a; tip.hidden = true;
+  ["atividades","publicacoes"].forEach(x => { $("aba-" + x).hidden = x !== a; $("tab-" + x).setAttribute("aria-selected", String(x === a)); });
+  try { if (location.hash !== "#" + a) history.replaceState(null, "", "#" + a); } catch(e) {}
+}
+["atividades","publicacoes"].forEach(x => $("tab-" + x).addEventListener("click", () => abrirAba(x)));
+if (location.hash === "#publicacoes") abrirAba("publicacoes");
+
+function renderMensal(){
+  const tiposMes = ["Prazo","Tarefa","Audiência","Evento"];
+  $("leg-mes").innerHTML = tiposMes.map(t => `<span><i style="background:${MES_TIPO[t]}"></i>${t}s</span>`).join("");
+  const meses = Object.keys(D.mensal_tipo || {}).filter(m => m.startsWith(String(D.ano))).sort();
+  const vals = meses.map(m => tiposMes.map(t => (D.mensal_tipo[m] || {})[t] || 0));
+  const tot = vals.map(v => v.reduce((a,b) => a+b, 0));
+  const W = 900, H = 300, L = 44, R = 10, Tp = 18, B = 28;
+  const topo = Math.max(10, Math.ceil(Math.max(...tot, 1) / 100) * 100);
+  const passo = topo <= 200 ? 50 : 100;
+  const y = v => Tp + (H - Tp - B) * (1 - v / topo);
+  const bw = (W - L - R) / Math.max(meses.length, 1);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Atividades concluídas por mês e tipo">`;
+  for (let v = 0; v <= topo; v += passo) s += `<line class="grade" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  meses.forEach((m, i) => {
+    const x = L + i * bw + bw * 0.18, w = bw * 0.64;
+    let base = 0;
+    const partes = [];
+    vals[i].forEach((v, j) => {
+      if (!v) return;
+      const y1 = y(base + v), y0 = y(base);
+      const h = Math.max(0, y0 - y1 - (base > 0 ? 2 : 0));
+      partes.push(`<rect x="${x}" y="${y1}" width="${w}" height="${h}" fill="${MES_TIPO[tiposMes[j]]}" ${j === 0 ? 'rx="0"' : ''}/>`);
+      base += v;
+    });
+    const mm = +m.slice(5) - 1;
+    s += `<g class="col" tabindex="0" data-i="${i}">${partes.join("")}<rect x="${L + i*bw}" y="${Tp}" width="${bw}" height="${H-Tp-B}" fill="transparent"/>` +
+      `<text x="${x + w/2}" y="${y(tot[i]) - 6}" text-anchor="middle" class="lbl">${fmt(tot[i])}</text>` +
+      `<text x="${x + w/2}" y="${H - 8}" text-anchor="middle">${MESES[mm]}</text></g>`;
+  });
+  s += `<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-width="1"/></svg>`;
+  $("mensal").innerHTML = `<div class="tabwrap" style="overflow-x:auto"><div style="min-width:520px">${s}</div></div>`;
+  $("mensal").querySelectorAll(".col").forEach(g => {
+    const i = +g.dataset.i, mm = +meses[i].slice(5) - 1;
+    ligarTip(g, `<b>${MESES[mm]}/${D.ano}</b> · ${fmt(tot[i])} concluídas<br>` + tiposMes.map((t,j) => `${t}s: ${fmt(vals[i][j])}`).join("<br>"));
+  });
+}
+
+["concluidas","prazos","30"].forEach(o => {
+  $("ord-" + o).addEventListener("click", () => {
+    ORDEM = o;
+    ["concluidas","prazos","30"].forEach(x => $("ord-" + x).setAttribute("aria-pressed", String(x === o)));
+    if (D) render();
+  });
+});
+
+function aviso(t){ $("aviso").textContent = t || ""; $("aviso").hidden = !t; }
+function lerArquivo(payload){
+  let p = payload;
+  if (typeof p === "string") { try { p = JSON.parse(p); } catch(e) { return null; } }
+  const b64 = p && p.content;
+  if (typeof b64 !== "string") return null;
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder("utf-8").decode(bytes));
+}
+const AVISO_DRIVE = {
+  server_not_connected: "Para ver os números de hoje, conecte o Google Drive em claude.ai → Configurações → Conectores e recarregue a página. Abaixo, a cópia guardada na página.",
+  needs_reauth: "O Google Drive pediu para conectar de novo: claude.ai → Configurações → Conectores → Google Drive. Abaixo, a cópia guardada na página.",
+  not_in_manifest: "A página não tem permissão para ler o Google Drive nesta visita. Recarregue e permita o Google Drive para ver os números de hoje.",
+  approval_required: "Para ver os números de hoje, recarregue a página e permita a leitura do Google Drive.",
+  selection_required: "Há mais de um Google Drive conectado: escolha qual usar no aviso do Claude e recarregue a página.",
+  tool_error: "Não consegui abrir o arquivo de dados no Google Drive. Ele precisa estar compartilhado com você (peça à Dra. Caroline).",
+  blocked_by_policy: "A organização bloqueou a leitura do Google Drive nesta página.",
+};
+
+if (COPIA){ D = COPIA; FONTE = "copia"; render(); }
+(async () => {
+  const mcp = window.claude ? await window.claude.use("mcp") : null;
+  if (!mcp) return;
+  mcp.watchTool("Google Drive", "download_file_content", {fileId: ARQUIVO_DRIVE}, ev => {
+    if (ev.type === "data"){
+      let d = null;
+      try { d = lerArquivo(ev.result.payload); } catch(e) { d = null; }
+      if (!d || !Array.isArray(d.pessoas)){ if (FONTE !== "drive") aviso("O arquivo de dados do Google Drive veio num formato inesperado; mostrando a cópia guardada na página."); return; }
+      D = d; FONTE = "drive"; aviso(""); render();
+    } else {
+      const code = ev.error && ev.error.code;
+      if (FONTE !== "drive" || ["needs_reauth","server_not_connected","not_in_manifest","blocked_by_policy","approval_required","selection_required"].includes(code)){
+        if (FONTE === "drive" && COPIA){ D = COPIA; FONTE = "copia"; render(); }
+        aviso(AVISO_DRIVE[code] || "Não consegui ler o Google Drive agora; mostrando a cópia guardada na página. Recarregue em alguns minutos.");
+      }
+    }
+  }, {refetchInterval: 30 * 60 * 1000, cache: {staleTime: 10 * 60 * 1000, gcTime: 24 * 60 * 60 * 1000}});
+})();
+</script>
